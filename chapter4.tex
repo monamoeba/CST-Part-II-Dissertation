@@ -1,0 +1,50 @@
+\chapter{Evaluation}
+\label{chapter:eval}
+In this chapter, I firstly review and evaluate the individual components developed in this project, then moving onto the evaluation of the core project as a whole.
+More specifically, the main evaluation objectives include:
+
+\begin{itemize}
+    \item \textit{Validation of the color code class and comparisons against literature}
+    \item \textit{Evaluation and comparison of the qubit mapping approach}
+    \item \textit{Evaluation and correctness of the alternative ion routing approach}
+    \item \textit{Benchmarking against other color code compilers}
+    
+\end{itemize}
+
+\section{Color Code Evaluation}
+
+Before passing the circuit into the compilation pipeline, it is necessary to first verify the logical correctness of the generated color code circuits.
+This section benchmarks the un-compiled output of the circuit generator against the established logical performance metrics of a single-ancilla color code detailed in \cite{flaggedweightcolorcode}. 
+
+To ensure a valid comparison with the baseline established in \cite{flaggedweightcolorcode}, this evaluation adopts their dual-threshold analysis methodology. The evaluation of topological codes requires understanding of both near-threshold behaviour and behaviour near low physical error rates assumed in FTQC. Therefore, the simulated logical error rates $p_L$ for various code distances $d$ are analysed with two threshold metrics.
+
+\subsection{Cross Threshold $p^\times_{th}$}
+
+The crossing point of a code 
+\subsection{Scaling Theshold $p^*_{th}$}
+
+
+\subsection{Results}
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/ImplCCThresholdPlot.png}
+    \caption{Logical vs physical error scaling for this project's single-ancilla (6.6.6) color code circuit implementation}
+    \label{fig:placeholder}
+\end{figure}
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/paper666ColorCodeLZ.png}
+    \caption{(6.6.6) color code threshold plot from \cite{flaggedweightcolorcode}, with dotted lines indicating the results for the single-ancilla circuits}
+    \label{fig:placeholder}
+\end{figure}
+
+\section{Qubit Mapping}
+
+
+
+\section{Project Requirements Review}
+
+
+
+\section{Project Success Criteria}

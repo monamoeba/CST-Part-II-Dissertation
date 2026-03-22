@@ -12,7 +12,7 @@
 \documentclass[12pt,a4paper, oneside]{memoir}
 
 % Set symmetrical margins
-\setlrmarginsandblock{3cm}{3cm}{*}  % Left and right margins
+\setlrmarginsandblock{2cm}{2cm}{*}  % Left and right margins
 \setulmarginsandblock{3cm}{3cm}{*}  % Top and bottom margins
 \checkandfixthelayout                % Apply the settings
 
@@ -22,9 +22,24 @@
 \usepackage{amsthm}
 \usepackage{array}
 \usepackage{graphicx}
+\graphicspath{ {./assets/} }
 \usepackage{natbib}
 \usepackage{relsize}
 \usepackage{braket}
+\usepackage{subfig}
+\usepackage{verbatim}
+\usepackage{minted}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage[table]{xcolor}
+\usepackage[dvipsnames]{xcolor}
+% Source - https://tex.stackexchange.com/a/270484
+% Posted by David
+% Retrieved 2026-02-12, License - CC BY-SA 3.0
+\usepackage{tikz}
+\usetikzlibrary{quantikz2}
+\usepackage[toc,page]{appendix}
+
 \usepackage[backend=biber, style=phys]{biblatex}
 \addbibresource{references.bib}
 
@@ -86,16 +101,19 @@
 %\includeonly{chapter1}
 \begin{document}
 
-\include{cover}
+%\include{cover}
 % Preliminary pages are always loaded (TOC, CV, etc.)
 %\preliminarypages
 
 % Include the different components of your thesis, in separate files.
 % Using \include allows you to set \includeonly above.
 \include{chapter1}
-%\include{chapter2}
 % ... and so on
 \include{chapter2}
+\include{chapter3}
+\include{chapter4}
+
+\printbibliography
 % These commands fix an odd problem in which the bibliography line
 % of the Table of Contents shows the wrong page number.
 \clearpage

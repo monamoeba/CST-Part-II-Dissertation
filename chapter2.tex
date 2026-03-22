@@ -1,11 +1,315 @@
 \chapter{Preparation}
 
 \section{Quantum Computing Preliminaries}
+First, we begin with a background on quantum computing, quantum error correction and trapped ion hardware, gradually building on these concepts to arrive at an understanding of quantum error correction circuits.
 
 \subsection*{The Basics of Quantum Computing}
 
-Classical hardware encodes information with bits, taking on binary values of either a 0 or 1. In the case of quantum computers, information can be stored using ``qubits'', allowing a qubit to be in a state of $\ket{0}$, $\ket{1}$ or in some linear combination $\alpha\ket{0} + \beta\ket{1}$ by leveraging quantum superposition. The values $\alpha$ and $\beta$ are complex numbers referred to as probability amplitudes, where $\lvert\alpha\rvert^2$ and $\lvert\beta\rvert^2$ give the probability of finding the qubit in the $\ket{0}$ and $\ket{1}$ states respectively, additionally satisfying the normalisation condition of $\lvert\alpha\rvert^2 + \lvert\beta\rvert^2 = 1$.
+
+
+Classical hardware encodes information with bits, taking on binary values of either a 0 or 1. In the case of quantum computers, information can be stored using ``qubits'', allowing a qubit to be in a state of $\ket{0}$, $\ket{1}$ or in some linear combination (a superposition) $\alpha\ket{0} + \beta\ket{1}$ by leveraging quantum superposition. The values $\alpha$ and $\beta$ are complex numbers referred to as probability amplitudes, where $\lvert\alpha\rvert^2$ and $\lvert\beta\rvert^2$ give the probability of finding the qubit in the $\ket{0}$ and $\ket{1}$ states respectively, additionally satisfying the normalisation condition of $\lvert\alpha\rvert^2 + \lvert\beta\rvert^2 = 1$.
+
+
+The following key concepts govern the state and evolution of the states in a quantum computer.
+
+\begin{enumerate}
+    \item The state of a quantum system is fully encapsulated by its state vector (a unit vector in the Hilbert space of the system)
+    \item Evolution of a state of a quantum state in discrete time can be described by a sequence of unitary (i.e $U^{-1} = U^\dagger$), norm-preserving operations
+    \item Measurement collapses a quantum state into the observed state
+\end{enumerate}
+
+The state space of a qubit can then be represented as a a unit vector. 
+The second postulate ensures that the state of a qubit always satisfies the normalisation condition, and allow us to evolve the state of a qubit using unitary quantum gates. The Pauli matrices are such examples:
+\[
+X = \begin{pmatrix}
+    0 & 1\\ 1 & 0
+\end{pmatrix}
+\;
+, \;\;
+Y = \begin{pmatrix}
+    0 & -i\\ i & 0
+\end{pmatrix}\;
+,\;\;
+Z = \begin{pmatrix}
+    1 & 0\\ 0 & -1
+\end{pmatrix}
+\]
+
+The X gate acts as a NOT operation, Y having the effect of $Y\ket{0} = i\ket{1}, Y\ket{1} = -i\ket{0}$ and Z reversing the parity (positive/negative) for $\ket{1}$ states. In addition to this, the Hadamard gate is frequently  used to produce a superposition state:
+\[
+H =\frac{1}{\sqrt{2}}\begin{pmatrix}
+    0 & 1\\ 1 & 0
+\end{pmatrix}
+,\;\;
+H\ket{0} = \ket{+} = \frac{1}{\sqrt{2}}(\ket{0} + \ket{1})
+,\;\;
+H\ket{0} = \ket{-} = \frac{1}{\sqrt{2}}(\ket{0} - \ket{1})
+\]
+
+% TO Add:
+% Section about modelling quantum errors?
+% Section about 
+
+
+\section{Quantum Error Correction (QEC)}
+
+Much like in classical computing, we aim to retain the states of the quantum system by reducing the risk of errors; and even if they do occur, to correct them. 
+
+\subsection{From Classical to Quantum Error Correction}
+
+In classical error correction, redundancy is introduced into data in order to preserve its state. A simple example would be the use of the repetition code. Consider we want to communicate a `0' over some noisy channel with a risk of bit flip errors. A 3-bit repetition code would encode this as `000' and send this over the channel. Given a single bit flip error occurs, and the receiver receives a `100', the receiver will take a majority vote of the encoding to conclude that the original message was a `0'. But in the case of a two or three bit flip error, this original message cannot be recovered. 
+
+%We can generalise this notion of error correction codes with a notation $[n,k,d]$, where $n$ denotes the number of bits in a codeword, $k$ denotes the original bitstring length and $d$ as the code distance (the minimum number of bits to change from one codeword to another). In this formalism, the 3-bit repetition code is denoted as $[3,1,3]$.
+
+ With classical error correction, we are able to examine the bits directly to determine if errors have occurred and if so, to attempt to correct them. For quantum systems, we recall postulate 3, where the measurement of a quantum state will cause the state to collapse from its superposition. As a result, direct measurement of the quantum state for error correction is undesirable.
+
+Suppose in a similar fashion to the classical repetition code, we use the following encoding:
+\[
+\alpha \ket 0  + \beta \ket 1\mapsto \alpha\ket{000}+ \beta \ket{111}
+\]
+
+To avoid directly measuring the state, we introduce the concept of ancilla qubits, which interact with the ``data'' qubits and are measured instead to infer whether an error has occurred. 
+
+For the 3-qubit repetition code, two ancillas are used, with the first measuring the parity of the first two qubits and the second ancilla measuring the parity of the last two qubits in the encoded state using CNOT gates (shown in the circuit Fig. \ref{fig:3qubitrepcode}). The measurement outcomes - the ``error syndromes'' - can firstly indicate whether a single bit flip occurred, and secondly on which qubit, allowing us to correct the state in the case of a single bit flip error. 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{3qubitrepcode.png}
+    \caption{A 3-qubit repetition code circuit from \cite{IBMQuantumLearning} demonstrating the use of two ancilla qubits to detect parity flips in the encoded state}
+    \label{fig:3qubitrepcode}
+\end{figure}
+
+%%%% This part feels a bit disjoint, end it better
+% --------------------------------------------------------------$
+
+In addition to bit flips, Quantum Error Correction Codes (QECC) must also be able to protect against phase-flip errors. Ancilla qubits can be exploited in a similar way to detect phase flips \cite{IBMQuantumLearning}. 
+
+In this way, QEC circuits can be scaled using these concepts in order to correct larger numbers of errors by building increasingly complex and sophisticated error detection and correction methods. 
+
+\subsection{Stabilizer Codes}
+
+Stabilizer codes are a class of quantum codes used for error correction, defined through a set of stabilizer generators that dictate a valid set of states - the stabilizer code's ``codespace''.
+
+A stabilizer generator is defined to be an $n$-qubit Pauli operator $P \in \Pi^n$ such that all valid states/codes $\ket{\psi}$ in the codespace have a +1 eigenvalue: $P\ket{\psi} = \ket{\psi}$. Stabilizer codes can be realised into quantum circuits by measuring the corresponding Pauli operators, often with the use of an ancilla qubit to hold the resulting eigenvalue or ``error syndrome'' \cite{stabilizersexplain}.
+
+% might help to tie in 3qubit rep code as a stab code?
+
+\subsection{Color Codes}
+
+Color codes constitute a class of 2D topological stabilizer codes defined on a three-colorable, three-valent, uniformly tiled lattice. Each face $f$ in the lattice defines two stabilizer generators in terms of Pauli operators acting on the vertices of that face:
+\begin{equation} \label{ccstabilizers}
+    S^f_X = \bigotimes_{v \in f} X_v, \;\; S^f_Z = \bigotimes_{v \in f} Z_v
+\end{equation}
+
+The code distance, $d$, is defined by the number of physical qubits along the shortest boundary of the lattice. This distance determines the code's error-correcting capability, as a higher distance allows for the suppression of more complex error patterns.
+
+This project specifically examines the compilation of triangular color codes \cite{tricolcodebombin} (examples shown in Fig. \ref{colorcodes}), which encode a single logical qubit. The spatial locality of the quantum operations (as seen in Eq. \ref{ccstabilizers}) where interactions are restricted to neighboring qubits, suggests that these codes can benefit from a topology-aware mapping scheme, similarly to past work with surface codes \cite{scottPaper}.
+
+
+\begin{figure}[!h]
+  \centering
+  \subfloat[Distance 7 6.6.6 color code]{\includegraphics[width=0.45\textwidth]{666.png}\label{fig:f2}}
+  \hfill
+  \subfloat[Distance 7 4.8.8 color code]{\includegraphics[width=0.45\textwidth]{488.png}\label{fig:f1}}
+  \hfill
+  \caption{Two different color code tesselations of distance 7, depicting both data qubits (black) and ancilla qubits (grey)}
+  \label{colorcodes}
+\end{figure}
+
+The color code attempts to preserve the state of the logical qubit by repeated stabilizer measurements, with the outcomes (syndromes) compared between rounds, such that a change in parity indicates an error.
+%- can implement clifford gates transversally 
+%- compare to surface codes
+
+\subsection{Decoding}
+
+In order to protect logical information, a QEC code must repeatedly measure syndrome information, using a decoder that takes in the syndrome information, inferring the most likely physical errors that occurred during computation and providing a correction. 
+
+QEC codes such as surface codes will often make use of decoders such as pymatching, which simplifies decoding to a minimum perfect weight matching problem on a matching graph. This graph is constructed with detectors as nodes and the edges between nodes representing potential errors flipping those detectors, weighted with the logarithm of the probability of the error \cite{pymatching}.
+
+Color codes cannot be directly decoded with such decoders, as one error often sets off three or more detection events rather than two which do not map directly into a matching graph with pymatching. Instead, this project will make use of chromobius, an open-source decoder based on a möbius decoder \cite{mobiusdecoder}. Chromobius takes in additional information about the color code circuit given through detector annotations, and maps errors into möbius errors and translating the problem into a möbius matching graph \cite{chromobius}.
+
+An key part of this project relies on integrating support for chromobius into the QCCD architecture simulation, allowing QCCD-compiled color code circuits to be decoded. 
 
 
 
-\section{}
+\section{Trapped Ion Quantum Charge-Coupled Devices}
+
+\subsection{Trapped Ions}
+
+Trapped Ion (TI) quantum computers make use of charged atomic particles (ions) as qubits, suspending the ions in space using electromagnetic fields. Some key advantages that TI systems provide being identical qubits, all-to-all connectivity and high coherence times \cite{ticoherence} and potential to outperform other architectures such as superconducting systems of the same size \cite{tivssuperconducting}.
+
+
+
+\subsection{Quantum Charge-Coupled Device (QCCD)}
+
+QCCD (Quantum Charge-Coupled Device) architecture was first proposed in 2002 \cite{qccd2002} in response to the practical challenges of manipulating large numbers of ions within a single trap, which limited scalability \cite{wineland1998experimental, hughes1996decoherence}. Rather than confining all ions into one trapping region, QCCD adopts a modular design in which ions are distributed across multiple interconnected traps. Computation is done through ion transport, where ions are ``shuttled'' between trapping zones to enable quantum gate operations and entanglement. While the original proposal suggests an explicit separation between memory and interaction regions in the architecture, more recent experimental implementations and compiler frameworks have relaxed these strict zone assumptions \cite{muzzletheshuttle}. 
+
+An example QCCD architecture is shown in Fig.\ref{fig:qccdarch}, illustrating the different components that make up the architectural topology. This project will make use of this abstraction as the basis for implementing QCCD related components in the compiler pass.
+
+QCCD architectures have since been realised by several groups, including Honeywell \cite{honeywellqccd} and Quantinuum with its H2 processor \cite{quantinuumH2}.
+
+
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/qccdarch.png}
+    \caption{QCCD architecture showing 4 ions (white) in each trap (blue). The traps are connected via transport segments (black) and junctions (orange), where ions can transported through for inter-trap movement.}
+    \label{fig:qccdarch}
+\end{figure}
+
+\section{The Current Framework}
+
+The existing compilation framework provides a highly optimized, state-of-the-art pipeline for mapping surface codes onto QCCD trapped-ion architectures \cite{scottPaper}.
+
+However, its current software architecture is tightly coupled to the specific topological properties of the surface code such as its square lattice structures and uniform weight-four stabilizers. Therefore, the compiler is fundamentally restrictive, lacking the ability to process and evaluate the suitability of a QCCD-based architecture for a more diverse range of QEC schemes.
+
+Therefore, the primary motivation of this project is to elevate the existing compiler from a hyper-specialized tool into a generalized, extensible framework for evaluating QEC codes on QCCD-based TI systems. To drive this architectural shift, this project specifically targets the compilation of quantum color codes.
+
+This work intends to expand the capabilities of the current compiler by not only enabling the compilation of color codes onto QCCD hardware but also aiming to establish a scalable pipeline capable of evaluating a broader class of quantum error-correcting codes, alongside exploring methodologies for further future generalisations. 
+
+\section{Starting Point}
+\textbf{Concepts:} Relevant knowledge came from prior experience with quantum computing, primarily through a QEC summer insight and workshop at Riverlane. Knowledge from Part IA Algorithms came in useful when working on certain compiler sections, and the content in Part II Quantum Computing helped to cement my understanding of the theory. During the summer, I prepared for the project by undertaking the Google Quantum AI Quantum Error Correction course. I also spent some time familiarising myself with the existing compilation framework, experimenting with surface code compilation onto QCCD architecture. 
+
+\textbf{Tools/Code:}
+Finish this section as project implementation finishes
+
+\section{Requirement Analysis}
+
+The end goal, as stated in my project proposal (Appendix \ref{appendix:A}) is to build and demonstrate functionality of a compiler that successfully maps a color code circuit to QCCD hardware.
+
+\begin{table}[!h]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{9cm}|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{2cm}|}
+\hline
+\multicolumn{1}{|c|}{\textbf{Main Deliverables}} & 
+\multicolumn{1}{c|}{\textbf{Priority}} & 
+\multicolumn{1}{c|}{\textbf{Risk}} \\
+\hline
+
+Mapping of qubits to physical ions in QCCD architecture
+& \textcolor{red}{\textbf{High}} 
+& \textcolor{red}{\textbf{High}} \\
+\hline
+
+Chromobius compatible color code implementation
+& \textcolor{red}{\textbf{High}} 
+& \textcolor{red}{\textbf{High}} \\
+\hline
+
+Integration of Chromobius into the compilation framework
+& \textcolor{red}{\textbf{High}} 
+& \textcolor{ForestGreen}{\textbf{Low}} \\
+\hline
+
+Adapting compilation framework to integrate color code compilation passes
+& \textcolor{red}{\textbf{High}} 
+& \textcolor{orange}{\textbf{Medium}} \\
+\hline
+
+Adapting ion routing for new circuits
+& \textcolor{red}{\textbf{High}}
+& \textcolor{red}{\textbf{High}} \\
+\hline
+
+Testing and benchmarking compiler passes
+& \textcolor{orange}{\textbf{Medium}}
+& \textcolor{ForestGreen}{\textbf{Low}} \\
+\hline
+
+Logical error rate evaluation
+& \textcolor{orange}{\textbf{Medium}}
+& \textcolor{ForestGreen}{\textbf{Low}} \\
+\hline
+
+Additional support for further tesselations (*)
+& \textcolor{ForestGreen}{\textbf{Low}}
+& \textcolor{orange}{\textbf{Medium}} \\
+\hline
+
+Investigation into ideal QCCD hardware parameters and topology (*)
+& \textcolor{ForestGreen}{\textbf{Low}} 
+& \textcolor{orange}{\textbf{Medium}} \\
+\hline
+
+\end{tabular}
+\caption{Main deliverables of the project and their perceived risk/difficulty of implementation, with extensions denoted with (*)}
+\label{tab:deliverables}
+\end{table}
+
+
+\section{Software Engineering Techniques}
+
+\subsection{Development Model}
+
+The development model that will be employed in this project is the spiral model. Due to the high implementation difficulty, it is unlikely that the project can be completed in a single implementation pass. Instead, a risk-driven iterative process that repeatedly evaluates and refines the prototypes for the compilation stages is more suitable for this project. This approach then ensures that I can carry out rigorous testing and validation with high-risk components of the project, an example being the ion routing algorithm that requires careful analysis to avoid deadlocks between operations. 
+
+\subsection{Libraries, licenses and tools}
+
+The primary language used for development is Python 3.13, based on the main language of the compilation framework \cite{scottPaper} and its widespread use in quantum computing tools \cite{chromobius}, \cite{stim}. JupyterNotebook was also used to provide an interactive python environment for experiments and testing. 
+
+The framework used as a base for this project is open source under the \#CHECK LICENSE
+
+Table \ref{tab:licenses} below lists the key third party libraries and their corresponding licenses used in the implementation with additional dependencies and libraries included in a \mintinline{bash}{requirements.txt} file. 
+
+ADD more detail into what the licenses mean and why I can use them like this
+
+\begin{table}[!h]
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{8cm}|>{\raggedright\arraybackslash}p{2.5cm}|}
+\hline
+\multicolumn{1}{|c|}{\textbf{Library}} & 
+\multicolumn{1}{c|}{\textbf{Purpose}} & 
+\multicolumn{1}{c|}{\textbf{License}} \\
+\hline
+
+\mintinline{bash}{stim}
+& Simulation and analysis of QEC circuits
+& Apache 2.0 \\
+
+
+\mintinline{bash}{sinter}
+& High speed Monte Carlo sampling of QEC circuits
+& Apache 2.0 \\
+
+\mintinline{bash}{chromobius}
+& Color code circuit decoder
+& Apache 2.0\\
+
+\mintinline{bash}{pytest}
+& Framework for functional testing 
+& MIT License \\
+
+\mintinline{bash}{numpy}
+& Provides support for fast linear algebra computation
+& BSD License \\
+
+\mintinline{bash}{matplotlib}
+& Enables visualisation of hardware and graph plotting
+& PSF License \\
+
+\mintinline{bash}{networkx}
+& Provides standard graph algorithms used in routing and architecture representation
+& BSD License \\
+
+\mintinline{bash}{Jupyter} \mintinline{bash}{Notebook}
+& Interactive python notebooks for experiments
+& BSD License \\
+\hline
+
+\end{tabular}
+\caption{Key third party software and libraries used in the project}
+\label{tab:licenses}
+\end{table}
+
+Project development was done inside a virtual environment (using python's \mintinline{bash}{venv}) to contain and isolate python packages required for the project.
+
+\subsection{Hardware and Backups}
+
+Development was done using VSCode IDE on my personal laptop (ThinkPad T430, 2-core CPU, 8GB RAM, Windows 10 and Linux) and my custom PC (6-core AMD Ryzen 5 7600X, 32GB RAM, Windows 11) for more intensive tasks. 
+
+GitHub and git was used for version control and to make regular backups of local progress to an online repository. 
+Documents and notes relating to the project were written and organised using Notion. Overleaf was used to write this dissertation and keep a backup copy of the dissertation online.
+
+

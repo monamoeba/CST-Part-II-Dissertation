@@ -1,0 +1,250 @@
+\chapter{Implementation}
+
+\section{Repository}
+
+\subsection{Repository and Contribution}
+
+Give the clearest respository overview the world has ever seen, including a clear diagram and indication of where the relevant implementation sections are and why - maximise and don't lose any marks here
+
+\section{Implementing Color Code Circuits}
+
+The first milestone of this project was to produce a set of color code circuits that could be used to compile onto QCCD architecture. This was motivated by the lack of native color code circuit support in stim, meaning the project required developing my own chromobius compatible color code circuits in stim for the compilation pipeline.
+
+\subsection{(6.6.6) Color Code Topology}
+
+As mentioned in the preparation chapter, color codes require a three-colourable tiling that can manifest as 3 possible tesselations. The (4.8.8), the (6.6.6) and the (4.6.12), each defining a distinct triangular color code topology \cite{landahl2011faulttolerantquantumcomputingcolor}. 
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/colorcodetesselations.png}
+    \caption{The three possible tilings of a triangular color code, each of distance 11 from \cite{landahl2011faulttolerantquantumcomputingcolor}}
+    \label{fig:colorcodetesselations}
+\end{figure}
+Of these, the (6.6.6) was an ideal candidate for implementation due to its relatively simpler topology and richer source of documentation and literature, enabling faster development towards a working prototype. 
+
+The (6.6.6) triangular color code produces a uniform tiling made of hexagons and half-hexagons in an equilateral triangle. For this, a \mintinline{python}{ColorCodeCircuit666} class was developed, alongside a function \mintinline{python}{_generate_layout()} constructing the required hexagonal lattice for a given distance, defining data qubits at each vertex and a central ancilla qubit for each plaquette.
+
+A specific design decision in this implementation was the use of a single ancillary qubit per face for stabilizer measurement (demonstrated in Fig. \ref{fig:circuitschedule}). Although this approach increased the total number of circuit operations due to reduced parallelism in the extraction of stabilizer syndromes, it was chosen to provide ease of debugging during development. Prioritizing a much simpler measurement schedule enabled incremental validation of the circuit and its schedule, which was particularly valuable at this early stage of the project.
+
+There exist more sophisticated and complex scheduling strategies and architectural implementations, which have been shown to achieve improved fault-tolerance thresholds \cite{chromobius, flaggedweightcolorcode}, but the main objective of this section was rapid prototyping to be able to devote more attention to the compilation stages.
+-> could talk abt research finding more optimal schedules
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.35\linewidth]{assets/hexagon.png}
+    \caption{Example plaquette and numbering corresponding to circuit schedule in Fig \ref{fig:circuitschedule}}
+    \label{fig:hexagon}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{quantikz}
+        \lstick{1} &&\targ{}&&&&&& &&\ctrl{3}&&&&&& &\\
+        \lstick{2} &&&\targ{}&&&&& &&&\ctrl{2}&&&&& &\\
+        \lstick{3} &&&&\targ{}&&&& &&&&\ctrl{1}&&&& &\\
+        \lstick{a} & \gate{RX} &\ctrl{-3} &\ctrl{-2} &\ctrl{-1} &\ctrl{1}&\ctrl{2}&\ctrl{3} & \gate{MX} & \gate{RZ} &\targ{} &\targ{} &\targ{} &\targ{}&\targ{}&\targ{} & \gate{MZ} & \\
+        \lstick{4} &&&&&\targ{}&&& &&&&&\ctrl{-1}&&& &\\
+        \lstick{5} &&&&&&\targ{}&& &&&&&&\ctrl{-2}&& & \\
+        \lstick{6} &&&&&&&\targ{}& &&&&&&&\ctrl{-3}& & \\
+    \end{quantikz}
+    \caption{Measurement schedule for a color code circuit with a single ancilla qubit}
+    \label{fig:circuitschedule}
+\end{figure}
+
+
+\subsection{Generating the Circuit}
+
+Typically, a stabilizer code circuit involves iterations of stabilizer measurement and defining detectors between cycles (demonstrated in Fig \ref{fig:stabilizerscircuit}). Detectors in stim are used to provide explicit annotations that define which combination of measurement results should be parity checked to find the presence of an error. This enables measurement outcomes to be compared between consecutive rounds in the circuit such that detection events (changes in the stabilizer values) can be identified, suggesting the occurrence of errors. 
+
+\begin{figure}[!h]
+    \centering
+    \begin{quantikz}
+        & \gate[4]{\text{X stabilizers}} & \gate[4]{\text{Z stabilizers}} & \gate[4]{\text{Detectors}} & \gate[4]{\text{X stabilizers}} & \gate[4]{\text{Z stabilizers}} & \gate[4]{\text{Detectors}} &\\
+        & & & & & & &\\
+        {\vdots}  \\
+        & & & & & & &\\
+    \end{quantikz}
+    \caption{Example timeline of measuring the X and Z stabilizers in a color code}
+    \label{fig:stabilizerscircuit}
+\end{figure}
+
+Taking the tiles generated from the \mintinline{python}{_generate_layout()}, I wrote \mintinline{python}{_build_circuit()} to construct the stim circuit, using helper functions \mintinline{python}{_measure_rounds()} and \mintinline{python}{_measure_stabilizers()} to model the qubit-level operations per stabilizer measurement and include the detector annotations required by chromobius into the stim circuit. To guide my construction process, I looked at a few single-qubit syndrome extraction models that detailed operation schedules for a single ancilla color code \cite{flaggedweightcolorcode, landahl2011faulttolerantquantumcomputingcolor}.
+
+\subsection{Noise Model}
+
+The noise model for a quantum circuit is used to characterise the types and distribution of errors that may occur during the operation of the circuit, mapping ideal unitary operations to noisy channels. 
+
+Several noise models exist in literature which vary in levels of abstraction, starting with the code-capacity noise model assuming independent errors on only data qubits between perfect syndrome measurements. The phenomenological noise model introduces additional complexity of faulty syndrome extraction where measurement outcomes are also subject to error. Finally, the circuit-level noise model assigns individual error probabilities to each physical operation.
+
+With a focus on realistic modelling and compilation of color codes onto QCCD architecture, the noise model chosen for this implementation was the circuit-level noise model to capture the detailed error mechanisms that may occur during the execution of a circuit.
+
+The circuit-level noise model of strength $p$ involve the following operations, alongside their respective stim interfaces that are used to model them:
+\begin{itemize}
+    \item Idle qubits or single qubit gates are followed by a single-qubit depolarizing noise channel (\mintinline{python}{DEPOLARIZE_1(p) q})
+    \item Two qubit gates are followed by a two-qubit depolarizing noise channel \newline(\mintinline{python}{DEPOLARIZE_2(p) q1 q2})
+    \item On measurement, the result may be flipped with probability $p$ \newline(\mintinline{python}{X_ERROR(p) q/Z_ERROR(p) q})
+    \item State preparation/resets may produce an orthogonal state with probability $p$ \newline(\mintinline{python}{X_ERROR(p)/Z_ERROR(p) q})
+\end{itemize}
+
+The single qubit depolarizing channel is defined as:
+\begin{align}
+    \varepsilon^1(p): (1-p) &\mapsto I\\
+    p/3 &\mapsto X\\
+    p/3 &\mapsto Y\\
+    p/3 &\mapsto Z\\
+\end{align}
+
+The two-qubit depolarizing channel is defined as:
+\begin{align}
+    \varepsilon^1(p): (1-p) &\mapsto I\otimes I\\
+    p/15 &\mapsto P_1\otimes P_2  & (\forall P_1,P_2 \in \{I,X,Y,Z\}\text{ where } (P_1,P_2) \neq (I,I))
+\end{align}
+
+\section{Qubit Mapping}
+
+Once the color code circuit is generated, the compiler must map the qubits to physical ions within traps in the QCCD architecture. This process makes use of a two-step pipeline: qubit clustering followed by cluster to trap mapping. 
+The primary architectural challenge of compiling color codes lies in the complex spatial grouping required for their execution that differs from surface codes. Therefore, this project will focus exclusively on developing and evaluating novel clustering methodologies suited for color codes. The subsequent mapping of these clusters to physical traps is handled by the base framework \cite{scottPaper}, a deliberate design choice that isolates the topology-aware compilation challenge from the hardware-specific trap assignment.
+
+Abstractly, qubit clustering can be modelled as a balanced graph partitioning problem, where given a graph $G = (V,E)$ with $V$ as qubits and edges in $E$ representing the two-qubit interactions in the circuit, $V$ should be divided into roughly $k$ equal-sized clusters whilst minimising the number of cut edges.
+However, balanced graph partitioning is considered NP-complete, where no poly-time approximation algorithm can guarantee a finite approximation ratio unless $P=NP$ \cite{balancedGraphPartitioning}. Instead, a heuristic based methodology must be employed, exploiting topology to preserve qubit neighbourhoods during clustering and minimising ancilla movements between ion traps.
+
+\subsection{Triangular Mapping Strategy}
+
+To map the triangular color code onto the physical hardware, one viable heuristic is to take advantage of its natural geometric topology. The core idea behind this mapping strategy is to group the physical qubits (ions) into distinct clusters by recursively subdividing the spatial area they occupy.
+
+Inspired by the Sierpinski triangle, the algorithm first bounds the entire array of ions within a single large outer triangle. It then repeatedly divides this space into four smaller sub-triangles (visualised in Fig. \ref{fig:triclustering}). The splitting process is iterated until the number of ions within a given sub-region falls within the specific capacity limits of the traps in the architecture.
+
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/triclustering.png}
+    \caption{Clustering mechanic for triangular topology}
+    \label{fig:triclustering}
+\end{figure}
+
+The subdivision of points occupying a triangular area can be done by converting the position of each point into barycentric coordinates and classifying the point into a sector of the triangle. For a point in the triangle defined by vertices $A$, $B$ and $C$, the barycentric coordinates can be given as a linear combination of these vectors
+
+\begin{equation} 
+    p = uA + vB + wC,
+\end{equation}
+with the constraint that 
+\begin{equation}
+    u + v + w = 1.
+\end{equation}
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/barycentricTriangle.png}
+    \caption{Sub-triangles defined within the barycentric coordinate space of the outer triangle}
+    \label{fig:barycentric}
+\end{figure}
+
+The core logic for this spatial clustering approach is outlined in Alg. \ref{alg:tri_clustering}. The algorithm utilizes a queue-based breadth-first search to handle the recursive subdivision. For each iteration, it calculates the midpoints of the current triangle's edges to define the four new subtriangles. It then classifies each ion into its corresponding new sub-region using barycentric coordinates and finalising a cluster once it reaches the maximum cluster capacity.
+
+\begin{algorithm}
+\caption{Triangular Clustering Algorithm}
+\label{alg:tri_clustering}
+\begin{algorithmic}[1]
+    \REQUIRE Point set $X$, max capacity of $k$
+    \ENSURE Set of final merged clusters $\mathcal{C}_{final}$ such that $\forall C \in \mathcal{C}_{final}.\; |C|\le k$
+    
+    \STATE $T_{root} \leftarrow \text{Bounding triangle enclosing } X$
+    \STATE $Q \leftarrow \text{Queue initialized with } (T_{root}, X)$
+    \STATE $\mathcal{C} \leftarrow \emptyset$ \COMMENT{Set of initial clusters}
+    
+    \WHILE{$Q$ is not empty}
+        \STATE Dequeue $(T, P)$ from $Q$
+        
+        \IF{$|P| \le k$}
+            \STATE $\mathcal{C} \leftarrow \mathcal{C} \cup \{P\}$
+            \STATE \textbf{continue}
+        \ENDIF
+        
+        \STATE Partition $T$ into four congruent subtriangles $\{T_1, T_2, T_3, T_4\}$ via edge midpoints
+        \STATE Partition $P$ into subsets $\{P_1, P_2, P_3, P_4\}$ such that $p \in P_i$ if $p$ lies within $T_i$
+        
+        \FOR{$i \in \{1, 2, 3, 4\}$}
+            \IF{$|P_i| > 0$}
+                \STATE Enqueue $(T_i, P_i)$ onto $Q$
+            \ENDIF
+        \ENDFOR
+    \ENDWHILE
+    
+    \STATE $\mathcal{C}_{final} \leftarrow \text{MergeUnderfilledClusters}(\mathcal{C}, k)$
+    \RETURN $\mathcal{C}_{final}$
+\end{algorithmic}
+\end{algorithm}
+
+Given that the exact triangular shape of the color code may change depending on the specific tessellation being used, this approach should be flexible. By applying the concept of a generalized Sierpinski triangle, the algorithm can be further generalised to successfully subdivide arbitrary, non-equilateral triangles \cite{generalisedsierpinskitriangle}. This ensures that the clustering method remains robust across different physical layouts.
+--------------------- - check if actually using a generalised sierpinski concept
+--------- add in a word about potential complexity time + space
+
+\subsubsection{Preventing Overclustering}
+
+While the triangular partitioning effectively groups ions based on the color code's natural topology, its strict geometric clustering has a critical flaw, where it can produce sparse or ``underfilled'' clusters, often near the edges of the lattice which leave these ions isolated in their own traps. This can affect ion routing, resulting in inefficient schedules and therefore, longer end-to-end runtimes and higher error rates.
+
+To resolve this, a merging phase is applied to the clusters. The core idea is to prioritize the smallest clusters and combine them with their neighbors. To do this, the algorithm sorts the clusters by size and searches the vicinity of each underfilled cluster. If combining a small cluster with a nearby neighbor keeps the total number of ions below the trap's maximum capacity, the two clusters are merged into one.
+
+Several merging methods (which influence the neighbours that are considered) were explored, including:
+\begin{itemize}
+    \item Bounded distance merging
+    \item Unbounded cluster merging
+    \item K nearest-neighbour merging
+\end{itemize}
+
+The generalized logic for this bottom-up approach is outlined in Alg. \ref{alg:merge_clusters}. The procedure iteratively searches for the closest valid partner for the smallest active clusters. Once a successful merge occurs, the cluster lists are updated, and the process repeats until no further merges can be made.
+ 
+\begin{algorithm}
+\caption{Greedy Merging of Underfilled Clusters}
+\label{alg:merge_clusters}
+\begin{algorithmic}[1]
+    \REQUIRE Initial set of clusters $\mathcal{C}$, max cluster capacity $k_{max}$
+    \ENSURE Final set of merged clusters $\mathcal{C}_{final}$
+    
+    \STATE $merged \leftarrow \text{True}$
+    
+    \WHILE{$merged$ is True and $|\mathcal{C}| \ge 2$}
+        \STATE $merged \leftarrow \text{False}$
+        \STATE Sort $\mathcal{C}$ in ascending order based on cluster size $|c|$
+        
+        \FOR{\textbf{each} cluster $c_i \in \mathcal{C}$}
+            \STATE Find candidate neighbours $\mathcal{N}(c_i)$ \COMMENT{e.g., via $k$-NN or radius threshold value}
+            \STATE Initialize $c_{best} \leftarrow \text{null}$, $d_{min} \leftarrow \infty$
+            
+            \FOR{\textbf{each} candidate $c_j \in \mathcal{N}(c_i)$}
+                \IF{$|c_i| + |c_j| \le k_{max}$}
+                    \STATE $d \leftarrow ||\mu_{c_i} - \mu_{c_j}||$
+                    \IF{$d < d_{min}$}
+                        \STATE $d_{min} \leftarrow d$
+                        \STATE $c_{best} \leftarrow c_j$
+                    \ENDIF
+                \ENDIF
+            \ENDFOR
+            
+            \IF{$c_{best} \neq \text{null}$}
+                \STATE $c_{new} \leftarrow c_i \cup c_{best}$ \COMMENT{Combine ion coordinate sets}
+                \STATE $\mu_{new} \leftarrow \frac{|c_i|\mu_{c_i} + |c_{best}|\mu_{c_{best}}}{|c_i| + |c_{best}|}$ \COMMENT{Size-weighted center of mass}
+                
+                \STATE $\mathcal{C} \leftarrow (\mathcal{C} \setminus \{c_i, c_{best}\}) \cup \{c_{new}\}$
+                \STATE $merged \leftarrow \text{True}$
+                \STATE \textbf{break}
+            \ENDIF
+        \ENDFOR
+    \ENDWHILE
+    
+    \RETURN $\mathcal{C}$
+\end{algorithmic}
+\end{algorithm}
+
+This algorithm can be amended to implement the different merging strategies mentioned above, yielding different final clusters and overall compilation results (discussed in Chapter \ref{chapter:eval}).
+
+\subsection{Mapping Clusters to Traps}
+
+Once clusters of ions/qubits are generated, each cluster is assigned to a trap.
+
+\section{Framework Changes}
+
+\newpage
+\section{Ion Routing Algorithm}
+
+
+

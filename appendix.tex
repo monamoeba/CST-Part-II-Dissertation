@@ -7,43 +7,160 @@
 % 2) Call \myappendix once, and then make each appendix a \section.
 
 \appendix
-\begin{center}
-\chapter{Appendix Title}
-\end{center}
-
-
+\chapter{}
+\label{appendix:A}
 % Appendix sections, subsections etc should not appear in the table of 
 % contents. So set tocdepth to 0 and set it back to 2 at the end. Do 
 % this for each appendix.
-\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
+%\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
 
-Supplementary material goes here. See for instance Figure
-\ref{fig:quote}.
+\newcommand{\maintitle}[1]{%
+        \noindent{\Large\textbf{#1}}
+        \vspace{0.2cm}
+        \hrule
+        \vspace{0.5cm}
+}
 
-\section{Lorem Ipsum}
+\maintitle{PROJECT PROPOSAL}
 
-dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
-quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-mollit anim id est laborum.
 
-\begin{figure}
-  \centering
-  \begin{tabular}{l}
-    ``I am glad I was up so late,\\
-    \quad{}for that's the reason I was up so early.''\\
-    \em \footnotesize William Shakespeare (1564-1616), British
-    dramatist, poet.\\
-    \em \footnotesize Cloten, in Cymbeline, act 2, sc. 3, l. 33-4.
-  \end{tabular}
-  \caption{A deep quote.}
-  \label{fig:quote}
-\end{figure}
+\section{Description of Project}
+%Quantum Error Correction is a field required to bridge the hardware implementation of quantum computers to the error rates required for practical Fault Tolerant Quantum Computing (FTQC). Color Codes are an example of a QEC code that encodes a logical qubit as a collection of physical qubits.
+Trapped Ion (TI) systems are a possible platform for quantum systems, of which Quantum Charge-Coupled Devices (QCCDs) are a modular architectural implementation which has demonstrated potential for Quantum Error Correction (QEC) on small TI systems \cite{ryananderson2021realizationrealtimefaulttolerantquantum}. Recently, a tooflow was proposed which provides a framework in which QEC codes can be compiled onto different choices of QCCD hardware to simulate and test metrics such as logical error rates \cite{scottPaper}. While this tool provides rudimentary support for codes such as the Surface Code, compilation of Color Codes are still a niche and under-researched area. This project will focus on building a set of compiler passes for this toolbox for evaluating Color Codes as a candidate QEC code on different QCCD hardware choices.
 
-\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+\subsection{Main Goals}
+The main goal of this project is to create a compiler that can take in QCCD hardware parameters to produce a representation of a color code that can be used to run QEC using primitive QCCD operations.
+\newline
+\noindent{The tools/adaptations that are required are:}
+\begin{itemize}
+    \item A compiler pass to map logical color code qubits to QCCD ions
+    \item A compiler pass to translate color code circuit operations to QCCD operations
+    \item Adaptation and addition to the simulation and test infrastructure to run the compiled color code circuit
+\end{itemize}
+
+This project will be considered successful if a user can pass in a choice of QCCD hardware parameters and produce estimate logical error rates for a given color code.
+
+\subsubsection{Key Challenges}
+The main challenge of this task is to be able to leverage features of a color code to provide a suitable and ideally near-optimal mapping onto different QCCD architecture.
+
+\subsection{Extensions}
+A few stretch goals for this include some research and further tool extensions:
+
+\begin{itemize}
+    \item Include support for different Color code tessellations e.g. [4,8,8]
+    \item Provide mappings for similar topological codes
+    \item Investigate the implementation and ideal QCCD hardware choices relating to higher dimensional QEC codes
+    \item Investigate ideal QCCD hardware choices for FTQC using color codes
+    \item Experimenting with different qubit mapping and ion routing approaches
+\end{itemize}
+
+\section{Evaluation}\label{eval}
+Evaluation of the project will be done as follows:
+\begin{itemize}
+    \item The tool for mapping the color code will be compared against how close the simulated QEC cycles gets to the optimal mapping for a pre-determined set of individual color codes and QCCD device models.
+    \item The compiler will be evaluated with a set of QEC cycles and tested for correct termination as well as the correct sequences of gates applied to each ion from a set of color codes and QCCD device models.
+    \item Measurement of compilation time and the number of routing operations required with comparison to theoretic times
+    \item Evaluation of logical error rates for color code, QCCD hardware configuration pairs
+\end{itemize}
+
+%\noindent{Further stretch goal(s) evaluation:}
+
+%\begin{itemize}
+%    \item The effect of QCCD architectural features/choices on elapsed/QEC round time, logical error rates and similar relevant metrics
+%    \item The fault-tolerance threshold of color code and QCCD configuration pairs
+%    \item Effect of mapping algorithm to compilation time and number of routing operations required
+%\end{itemize}
+\section{Success Criteria}
+\begin{enumerate}
+    \item A compilation/mapping scheme for color codes onto QCCD architecture that can be used to estimate logical error rates.
+    \item Suitable simulation and testing infrastructure to carry out the evaluation  on cycles of Color Codes on QCCD devices and the compiler.
+\end{enumerate}
+
+
+\section{Risk Management}
+As quantum computing is a complex field, one source of risk is to lack knowledge in the theory to understand or implement a part of this project. To mitigate this, I will ensure to regularly read up on literature to reinforce my knowledge and consult experts such as lecturers and my supervisor when facing any confusion.
+
+\section{Resource Declaration}
+\begin{itemize}
+    \item \textbf{Computing resources:}
+        \begin{itemize}
+            \item ThinkPad T430 2-core CPU with 8GB RAM (Windows 10 and Linux) for portability
+            \item Custom PC with a 6-core CPU and 32GB RAM (Windows 11)
+        \end{itemize}
+    \item \textbf{Dissertation Backup:} Majority of my dissertation will be written and saved on \href{https://www.overleaf.com}{Overleaf}. I will also save the project onto an external hard-disk at intermediate stages.
+
+    \item \textbf{Code Backup:} Code will be stored in a remote GitHub repository. Local development will be done by branching from the main code, writing code, then merged back into main.
+\end{itemize}
+
+\section{Starting Point}
+Over the summer, I completed a Coursera on QEC by Google Quantum AI along with some exploration of the stim python library and the \href{https://eur03.safelinks.protection.outlook.com/?url=https%3A%2F%2Fgithub.com%2Fscottjones03%2Fpublic-material-2025%2Ftree%2Fmain&data=05%7C02%7Cme526%40cam.ac.uk%7C4332f74bac054c3f6e0908ddf3b5f0cd%7C49a50445bdfa4b79ade3547b4f3986e9%7C1%7C0%7C638934684941570154%7CUnknown%7CTWFpbGZsb3d8eyJFbXB0eU1hcGkiOnRydWUsIlYiOiIwLjAuMDAwMCIsIlAiOiJXaW4zMiIsIkFOIjoiTWFpbCIsIldUIjoyfQ%3D%3D%7C0%7C%7C%7C&sdata=qcgGlEcD0yaOa%2BshDJWb3NB59bPOL3gSbxWLu0kjf%2FM%3D&reserved=0}{QEC test framework repository} on GitHub.
+
+\section{Timetable}
+\begin{enumerate}
+    \item \textbf{10/10 - 23/10: Preparation}
+    
+    Deliverables:
+    \begin{itemize}
+        \item A comprehensive report on color codes including motivation and requirements for mapping color codes to QCCD
+        \item Tests run on the QEC testing framework to demonstrate sufficient understanding of the current implementation
+    \end{itemize}
+
+    \item \textbf{24/10 - 6/11: Mapping Research}
+    
+    Deliverables: Research into methods of mapping qubits to ions
+    \begin{itemize}
+        \item Research and selection of mapping methodologies such as clustering, greedy heuristics and satisfiability (SMT)
+        \item Report on paper readings 
+        \item Draft of preparation chapter
+    \end{itemize}
+    The algorithm should make use of the characteristics of the color code.
+    
+    \item \textbf{7/11 - 4/12: Mapping Implementation}
+    
+    Deliverables: mappings of color codes to the available QCCD hardware choices. 
+    \begin{itemize}
+        \item Assignment of color code qubits to physical qubits in hardware
+        \item Adjustment and addition to framework to compile color code circuits
+        \item Writing testing and evaluation infrastructure
+        \item Draft of the Implementation chapter
+    \end{itemize}
+    Extended timeframe to account for 3 module assignments that take place over mid-late November.
+    
+    \item \textbf{5/11 - 25/12: Extension Work}
+    Deliverables: Implementation of any relevant extension work into core and discussion of results in relevant chapters.
+    
+    \item \textbf{26/12 - 15/1:  Testing + Evaluation}
+    Deliverables: evaluating implementations and generating graphs and metrics. Draft of the evaluation chapter
+   
+    Some parameters that may be tested for the QCCD QEC implementation with enough time:
+    \begin{itemize}
+        \item Communication topology
+        \item Segment lengths
+        \item Trap sizings
+        \item Color Code tessellations
+        \item Code dimensions        
+        \item Ancilla to data qubit ratio
+        \item Distinct QCCD memory and processing zones
+    \end{itemize}
+
+    \item \textbf{16/1 - 29/1: Dissertation Intro}
+
+    Deliverable: Draft of introduction chapter. Draft of progress report due for 6/2. Send whole draft dissertation to supervisor for checks.
+
+    \item \textbf{30/1 - 19/2: Editing and Conclusion Chapter}
+    
+    Deliverable: Draft of conclusion chapter. Finalising and reviewing previously drafted chapters. Progress report submission and presentation.
+
+    Slack added to account for high weekly lecture load in Lent term.
+    
+    \item \textbf{20/2 - 26/3: Finalising + Editing of Chapters}
+
+    Deliverable: Full dissertation draft sent to DoS and Supervisor before the beginning of Easter break.
+    
+    \item \textbf{27/3 - 15/5: Refine Final Dissertation and Submission}
+\end{enumerate}
+
+%\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
 
 %%% Local Variables: ***
 %%% mode: latex ***
