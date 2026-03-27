@@ -14,31 +14,95 @@ More specifically, the main evaluation objectives include:
 \section{Color Code Evaluation}
 
 Before passing the circuit into the compilation pipeline, it is necessary to first verify the logical correctness of the generated color code circuits.
-This section benchmarks the un-compiled output of the circuit generator against the established logical performance metrics of a single-ancilla color code detailed in \cite{flaggedweightcolorcode}. 
+This section benchmarks the un-compiled output of the circuit generator against the established logical performance metrics of a single-ancilla color code detailed in Ref. \cite{flaggedweightcolorcode}. 
 
-To ensure a valid comparison with the baseline established in \cite{flaggedweightcolorcode}, this evaluation adopts their dual-threshold analysis methodology. The evaluation of topological codes requires understanding of both near-threshold behaviour and behaviour near low physical error rates assumed in FTQC. Therefore, the simulated logical error rates $p_L$ for various code distances $d$ are analysed with two threshold metrics.
+To ensure a fair comparison with the baseline established in Ref.\cite{flaggedweightcolorcode}, this evaluation adopts their dual-threshold analysis methodology. The evaluation of topological codes requires understanding of both near-threshold behaviour and behaviour near low physical error rates assumed in FTQC. Therefore, the simulated logical error rates $p_L$ for various code distances $d$ are analysed with two threshold metrics.
 
 \subsection{Cross Threshold $p^\times_{th}$}
+The cross threshold identifies a critical phase transition in the codes behaviour, where physical error rates above the threshold, increasing code distance will introduce more physical errors, causing the logical error rate to worsen. Conversely, physical error rates below this threshold exponentially suppresses logical errors as code distance is increased.
+The cross threshold is determined by finding the intersection point of the logical error rate curves across different code distances under circuit-level noise. Visually, this is the point at which the logical error curves of different code distances cross one another. 
 
-The crossing point of a code 
+In order to extract this point numerically, the data from Monte Carlo simulations of the code were fitted to the equation as follows \cite{landahl2011faulttolerantquantumcomputingcolor, wangHarringtonPreskill}:
+\begin{equation}
+\label{crossthresheq}
+    p_L = A + B(p - p^{\times}_{th}) d^{1/\nu_0} + C(p - p^\times_{th})^2 d^{2/\nu_0}
+\end{equation}
+
+Here $A$, $B$, and $C$ are fitting constants, $d$ being the code distance, $p$ represents the physical error rate and $\nu_0$ is the critical exponent. The logical error rates from the \mintinline{python}{stim} simulations are then fitted to Eq. \ref{crossthresheq} to find $p^\times_{th}$.
+
 \subsection{Scaling Theshold $p^*_{th}$}
+While the cross threshold identifies the theoretical phase transition, practical FTQC is thought to operate at physical error rates significantly below this point. To benchmark the performance of the color code circuit at the operational FTQC level, where physical error rates are sufficiently below the cross threshold, the logical error rate is expected to scale exponentially according to the relation \cite{surfacecodesFowler, flaggedweightcolorcode}:
 
+\begin{equation}
+\label{scalethresheq}
+    p_L = c\left( \frac{p}{p^*_{th}}\right)^{\alpha\left(\frac{d+1}{2}\right)}
+\end{equation}
+
+The logical error rate data from the stim experiments were fitted to Eq. \ref{scalethresheq} with $c$, $p^*_{th}$, $\alpha$ as fitting parameters. 
 
 \subsection{Results}
-\begin{figure}[!h]
+
+\begin{table}[htbp]
+\centering
+
+\label{tab:threshold_comparisonXL}
+\renewcommand{\arraystretch}{1.3} % Adds a bit of vertical breathing room between rows
+\begin{tabular}{l c c c c}
+\hline
+ & $c$ & $\alpha$ & $p_{\text{th}}^*$ & $p_{\text{th}}^\times$ \\
+\hline
+Baseline \cite{flaggedweightcolorcode} & 0.116(6) & 0.610(5) & 0.00274(6) & 0.002547(8) \\
+Ours  & 0.605(5) & 0.6975(6) & 0.00370(1) & 0.00311(4) \\
+\hline
+\end{tabular}
+\caption{Comparison of fitting parameters for the logical $X$-error rates of the single-ancilla color code. Values in parentheses denote the standard statistical uncertainty in the final digit.}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+
+\label{tab:threshold_comparisonZL}
+\renewcommand{\arraystretch}{1.3} % Adds a bit of vertical breathing room between rows
+\begin{tabular}{l c c c c}
+\hline
+ & $c$ & $\alpha$ & $p_{\text{th}}^*$ & $p_{\text{th}}^\times$ \\
+\hline
+Baseline \cite{flaggedweightcolorcode} & 0.111(6) & 0.600(5) & 0.00270(6) & 0.002528(8) \\
+Ours  & 0.655(6) & 0.6962(7) & 0.00382(1) & 0.00308(4) \\
+\hline
+\end{tabular}
+\caption{Comparison of fitting parameters for the logical $Z$-error rates of the single-ancilla color code. Values in parentheses denote the standard statistical uncertainty in the final digit.}
+\end{table}
+
+\begin{figure}[b]
     \centering
     \includegraphics[width=0.75\linewidth]{assets/ImplCCThresholdPlot.png}
     \caption{Logical vs physical error scaling for this project's single-ancilla (6.6.6) color code circuit implementation}
     \label{fig:placeholder}
 \end{figure}
 
-\begin{figure}[!h]
+\begin{figure}
     \centering
-    \includegraphics[width=0.75\linewidth]{assets/paper666ColorCodeLZ.png}
+    \includegraphics[width=0.9\linewidth]{assets/paper666ColorCode.png}
     \caption{(6.6.6) color code threshold plot from \cite{flaggedweightcolorcode}, with dotted lines indicating the results for the single-ancilla circuits}
     \label{fig:placeholder}
 \end{figure}
 
+\begin{figure}[!h]
+
+        \begin{subfigure}{0.7\textwidth}
+        \includegraphics[width=1\linewidth, height=5cm]{assets/ImplCCThresholdPlot_Final_XL.png} 
+        \caption{Run 1}
+        \label{fig:subim1}
+        \end{subfigure}
+        \begin{subfigure}{0.7\textwidth}
+        \includegraphics[width=1\linewidth, height=5cm]{assets/ImplCCThresholdPlot_Final_ZL.png}
+        \caption{Run 2}
+        \label{fig:subim2}
+        \end{subfigure}
+        \label{fig:image2}
+    \end{figure}
+    
 \section{Qubit Mapping}
 
 

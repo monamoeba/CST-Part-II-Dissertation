@@ -81,7 +81,7 @@ The circuit-level noise model of strength $p$ involve the following operations, 
 \begin{itemize}
     \item Idle qubits or single qubit gates are followed by a single-qubit depolarizing noise channel (\mintinline{python}{DEPOLARIZE_1(p) q})
     \item Two qubit gates are followed by a two-qubit depolarizing noise channel \newline(\mintinline{python}{DEPOLARIZE_2(p) q1 q2})
-    \item On measurement, the result may be flipped with probability $p$ \newline(\mintinline{python}{X_ERROR(p) q/Z_ERROR(p) q})
+    \item On measurement, the result may be flipped with probability $p$ \newline(\mintinline{python}{M(p) q/MX(p) q})
     \item State preparation/resets may produce an orthogonal state with probability $p$ \newline(\mintinline{python}{X_ERROR(p)/Z_ERROR(p) q})
 \end{itemize}
 
