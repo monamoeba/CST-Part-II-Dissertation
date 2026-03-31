@@ -4,11 +4,38 @@
 
 \subsection{Repository and Contribution}
 
-Give the clearest respository overview the world has ever seen, including a clear diagram and indication of where the relevant implementation sections are and why - maximise and don't lose any marks here
+\begin{itemize}
+    \item \mintinline{bash}{src/}
+    \begin{itemize}
+        \item \mintinline{bash}{compiler/qccd_color_qubits_to_ions.py}: code for topology aware color code qubit mapping.
+        \item \mintinline{bash}{simulator/}
+        \begin{itemize}
+            \item \mintinline{bash}{qccd_circuit.py}: code contributions to adapt framework for color code generation and decoding compatibility for the simulation
+            \item \mintinline{bash}{color_code_processor.py}: code used to process and compile color codes
+        \end{itemize}
+    \end{itemize}
+
+    \item \mintinline{bash}{color_code_utils/}
+    \begin{itemize}
+        \item \mintinline{bash}{color_code_circuits/} folder containing implementations of various experimental color codes, including the main (6.6.6) implementation in \mintinline{bash}{color_code_circuit_666.py}
+
+        \item \mintinline{bash}{abstract_color_code_circuit.py}, \mintinline{bash}{color_code_tile.py} helper classes and templates for color code circuit implementations
+    \end{itemize}
+
+    \item \mintinline{bash}{color_code_experiments/} Jupyter notebooks for testing, plot generation, research and experimentation based tasks
+
+    \item \mintinline{bash}{data/cc_data/} folder containing results and outputs from color code compilation simulations
+    
+    \item \mintinline{bash}{tests/}
+
+    \item \textit{config\_model.yml}, \textit{config\_color.yml}: configuration files to specify parameters for compiler runs
+    
+\end{itemize}
+Give the clearest respository overview the world has ever seen, including a clear diagram and indication of where the relevant implementation sections are and why.
 
 \section{Implementing Color Code Circuits}
 
-The first milestone of this project was to produce a set of color code circuits that could be used to compile onto QCCD architecture. This was motivated by the lack of native color code circuit support in stim, meaning the project required developing my own chromobius compatible color code circuits in stim for the compilation pipeline.
+The first milestone of this project was to produce a set of color code circuits that could be used to compile onto QCCD architecture. This was motivated by the lack of native color code circuit support in stim, meaning the project required developing alternative, new chromobius compatible color code circuits in stim for the compilation pipeline.
 
 \subsection{(6.6.6) Color Code Topology}
 
@@ -30,7 +57,7 @@ There exist more sophisticated and complex scheduling strategies and architectur
 -> could talk abt research finding more optimal schedules
 \begin{figure}[!h]
     \centering
-    \includegraphics[width=0.35\linewidth]{assets/hexagon.png}
+    \includegraphics[width=0.325\linewidth]{assets/hexagon.png}
     \caption{Example plaquette and numbering corresponding to circuit schedule in Fig \ref{fig:circuitschedule}}
     \label{fig:hexagon}
 \end{figure}
@@ -79,10 +106,10 @@ With a focus on realistic modelling and compilation of color codes onto QCCD arc
 
 The circuit-level noise model of strength $p$ involve the following operations, alongside their respective stim interfaces that are used to model them:
 \begin{itemize}
-    \item Idle qubits or single qubit gates are followed by a single-qubit depolarizing noise channel (\mintinline{python}{DEPOLARIZE_1(p) q})
-    \item Two qubit gates are followed by a two-qubit depolarizing noise channel \newline(\mintinline{python}{DEPOLARIZE_2(p) q1 q2})
-    \item On measurement, the result may be flipped with probability $p$ \newline(\mintinline{python}{M(p) q/MX(p) q})
-    \item State preparation/resets may produce an orthogonal state with probability $p$ \newline(\mintinline{python}{X_ERROR(p)/Z_ERROR(p) q})
+    \item Idle qubits (identity gate) or single qubit gates act ideally, followed by a single-qubit depolarizing noise channel: \newline(\mintinline{python}{DEPOLARIZE_1(p) q})
+    \item Two qubit gates act ideally, followed by a two-qubit depolarizing noise channel: \newline(\mintinline{python}{DEPOLARIZE_2(p) q1 q2})
+    \item On measurement, the result may be flipped with probability $p$: \newline(\mintinline{python}{M(p) q/MX(p) q})
+    \item State preparation/resets may produce an orthogonal state with probability $p$: \newline(\mintinline{python}{X_ERROR(p)/Z_ERROR(p) q})
 \end{itemize}
 
 The single qubit depolarizing channel is defined as:
@@ -102,22 +129,23 @@ The two-qubit depolarizing channel is defined as:
 \section{Qubit Mapping}
 
 Once the color code circuit is generated, the compiler must map the qubits to physical ions within traps in the QCCD architecture. This process makes use of a two-step pipeline: qubit clustering followed by cluster to trap mapping. 
-The primary architectural challenge of compiling color codes lies in the complex spatial grouping required for their execution that differs from surface codes. Therefore, this project will focus exclusively on developing and evaluating novel clustering methodologies suited for color codes. The subsequent mapping of these clusters to physical traps is handled by the base framework \cite{scottPaper}, a deliberate design choice that isolates the topology-aware compilation challenge from the hardware-specific trap assignment.
+The primary architectural challenge of compiling color codes lies in their high weight stabilizer generators and triangular lattice that differs from surface codes. Therefore, this project will focus exclusively on developing and evaluating novel clustering methodologies for color codes. The subsequent mapping of these clusters to physical traps is handled by the base framework \cite{scottPaper}, a deliberate choice to isolate the topology-aware mapping challenge from the hardware-specific trap assignment.
 
 Abstractly, qubit clustering can be modelled as a balanced graph partitioning problem, where given a graph $G = (V,E)$ with $V$ as qubits and edges in $E$ representing the two-qubit interactions in the circuit, $V$ should be divided into roughly $k$ equal-sized clusters whilst minimising the number of cut edges.
 However, balanced graph partitioning is considered NP-complete, where no poly-time approximation algorithm can guarantee a finite approximation ratio unless $P=NP$ \cite{balancedGraphPartitioning}. Instead, a heuristic based methodology must be employed, exploiting topology to preserve qubit neighbourhoods during clustering and minimising ancilla movements between ion traps.
 
+Choosing an appropriate cluster capacity is important at this stage, as this can influence the ion routing schedule between traps. Having the cluster size equal to the trap capacity can overly restrict movement and parallelism of operations as an ion must first be displaced from a trap for another ion to enter it. However, a sparse trap can unnecessarily increase the number of ion routing operations. For this reason, this project utilises a clustering capacity equal to $\textbf{trap capacity} - 1$.
+
 \subsection{Triangular Mapping Strategy}
 
-To map the triangular color code onto the physical hardware, one viable heuristic is to take advantage of its natural geometric topology. The core idea behind this mapping strategy is to group the physical qubits (ions) into distinct clusters by recursively subdividing the spatial area they occupy.
+To map the triangular color code onto the physical hardware, one viable heuristic is to take advantage of its natural geometric topology. The core idea behind this mapping strategy being to group the physical qubits (ions) into distinct clusters by recursively subdividing the spatial area they occupy.
 
-Inspired by the Sierpinski triangle, the algorithm first bounds the entire array of ions within a single large outer triangle. It then repeatedly divides this space into four smaller sub-triangles (visualised in Fig. \ref{fig:triclustering}). The splitting process is iterated until the number of ions within a given sub-region falls within the specific capacity limits of the traps in the architecture.
-
+Inspired by the Sierpinski triangle, the algorithm first bounds the entire array of ions within a single large outer triangle. The space is then subdivided into four sub-triangles (visualised in Fig. \ref{fig:triclustering}). The division process is repeated on the sub-triangles until the number of ions within a given triangle falls below a given clustering threshold.
 
 \begin{figure}[!h]
     \centering
     \includegraphics[width=0.75\linewidth]{assets/triclustering.png}
-    \caption{Clustering mechanic for triangular topology}
+    \caption{Clustering mechanic for a triangular topology using an example distance 5 (6.6.6) color code with data qubits (blue) and ancilla qubits (yellow)}
     \label{fig:triclustering}
 \end{figure}
 
@@ -128,17 +156,17 @@ The subdivision of points occupying a triangular area can be done by converting 
 \end{equation}
 with the constraint that 
 \begin{equation}
-    u + v + w = 1.
+    u + v + w = 1, \;\; u\geq 0, v\geq 0, w\geq 0
 \end{equation}
 
 \begin{figure}[!h]
     \centering
     \includegraphics[width=0.75\linewidth]{assets/barycentricTriangle.png}
-    \caption{Sub-triangles defined within the barycentric coordinate space of the outer triangle}
+    \caption{Sub-triangles defined within the barycentric coordinate space of the outer triangle with points and their respective coordinates defined in terms of $\triangle ABC$}
     \label{fig:barycentric}
 \end{figure}
 
-The core logic for this spatial clustering approach is outlined in Alg. \ref{alg:tri_clustering}. The algorithm utilizes a queue-based breadth-first search to handle the recursive subdivision. For each iteration, it calculates the midpoints of the current triangle's edges to define the four new subtriangles. It then classifies each ion into its corresponding new sub-region using barycentric coordinates and finalising a cluster once it reaches the maximum cluster capacity.
+The core logic for this spatial clustering approach, outlined in Alg. \ref{alg:tri_clustering}, uses an iterative, queue-based breadth-first search to perform partitioning steps. At each iteration, the algorithm calculates the edge midpoints of the current triangle's edges to define the four nested sub-triangles. Qubits within the parent region are then mapped to sub-regions using their barycentric coordinates. This subdivision process continues until the number of unassigned qubits within a sub-triangle falls below the maximum trap capacity constraint.
 
 \begin{algorithm}
 \caption{Triangular Clustering Algorithm}
@@ -174,13 +202,16 @@ The core logic for this spatial clustering approach is outlined in Alg. \ref{alg
 \end{algorithmic}
 \end{algorithm}
 
-Given that the exact triangular shape of the color code may change depending on the specific tessellation being used, this approach should be flexible. By applying the concept of a generalized Sierpinski triangle, the algorithm can be further generalised to successfully subdivide arbitrary, non-equilateral triangles \cite{generalisedsierpinskitriangle}. This ensures that the clustering method remains robust across different physical layouts.
---------------------- - check if actually using a generalised sierpinski concept
---------- add in a word about potential complexity time + space
+
+Given that the exact triangular shape of the color code may change depending on the specific tessellation being used, a necessary design objective was to ensure the algorithm remained flexible for different bounding triangles.
+By defining partition boundaries strictly through edge midpoints rather than rigid geometric properties (e.g. fixed angles or side lengths), the clustering methodology maintains compatibility across arbitrary triangular lattice layouts. 
+
+Assuming a relatively uniform distribution of $N$  input qubits, each subdivision partition the points into four subsets, resulting in a partitioning tree depth of $\log_4 (N)$. The implementation uses vectorised NumPy operations to evaluate barycentric coordinates. The algorithm therefore performs the processing of all points at any given depth in $O(N)$ time. As a result, the average-case time complexity is bounded at $O(N\log N)$. Since the initial bounding triangle is defined using the input set of points, our assumption should usually hold.
+Additionally, worst-case space complexity is $O(N)$, since the BFS queue will at most store references to all $N$ coordinates during a partitioning cycle.
 
 \subsubsection{Preventing Overclustering}
 
-While the triangular partitioning effectively groups ions based on the color code's natural topology, its strict geometric clustering has a critical flaw, where it can produce sparse or ``underfilled'' clusters, often near the edges of the lattice which leave these ions isolated in their own traps. This can affect ion routing, resulting in inefficient schedules and therefore, longer end-to-end runtimes and higher error rates.
+While the triangular partitioning effectively groups ions based on the color code's natural topology, its strict geometric clustering has a critical flaw, where it can produce sparse or ``underfilled'' clusters due to the four-way splitting mechanism, often near the edges of the lattice, leaving these ions isolated in their own traps. This can have a significant effect on ion routing, resulting in inefficient schedules and therefore, longer end-to-end runtimes and higher error rates during compilation.
 
 To resolve this, a merging phase is applied to the clusters. The core idea is to prioritize the smallest clusters and combine them with their neighbors. To do this, the algorithm sorts the clusters by size and searches the vicinity of each underfilled cluster. If combining a small cluster with a nearby neighbor keeps the total number of ions below the trap's maximum capacity, the two clusters are merged into one.
 
@@ -188,8 +219,15 @@ Several merging methods (which influence the neighbours that are considered) wer
 \begin{itemize}
     \item Bounded distance merging
     \item Unbounded cluster merging
-    \item K nearest-neighbour merging
+    \item $k$-nearest-neighbour merging
 \end{itemize}
+
+For bounded distance merging, experimental thresholds around the maximum distance between neighbouring ancilla qubits, 
+
+\begin{equation}
+    \text{thresh} = \max_{i,j}\; \text{distance}(a_i, a_j),  
+\end{equation}
+were chosen to preserve high locality in the clustering. As $\text{thresh} \rightarrow \infty$, this method degrades to an unbounded distance search strategy. 
 
 The generalized logic for this bottom-up approach is outlined in Alg. \ref{alg:merge_clusters}. The procedure iteratively searches for the closest valid partner for the smallest active clusters. Once a successful merge occurs, the cluster lists are updated, and the process repeats until no further merges can be made.
  
@@ -235,16 +273,90 @@ The generalized logic for this bottom-up approach is outlined in Alg. \ref{alg:m
 \end{algorithmic}
 \end{algorithm}
 
-This algorithm can be amended to implement the different merging strategies mentioned above, yielding different final clusters and overall compilation results (discussed in Chapter \ref{chapter:eval}).
+The algorithm was modified to implement the different merging strategies mentioned above, yielding different final clusters and overall compilation results (discussed in Chapter \ref{chapter:eval}).
 
-\subsection{Mapping Clusters to Traps}
+A particularly useful data structure in this implementation was the use of a KD-tree, a binary search tree in $k$-dimensional space with $N$ items, enabling fast $O(\log N)$ lookups of cluster centers for operations relating to line 6 in Alg. \ref{alg:merge_clusters}. 
 
-Once clusters of ions/qubits are generated, each cluster is assigned to a trap.
+Suppose the input to the merging algorithm is $K$ clusters. Analysing a single iteration of the while loop, initialisation of a KD-tree takes $O(K \log K)$. The sorting of the active clusters by size also takes $O(K \log K)$. The KD-tree is then queried for the nearest neighbour(s) (depending on the strategy), resulting in a query time of at most $O(K \log K)$.
+In the worst case scenario, the algorithm finds one valid merge per while-loop iteration requiring a rebuild of the KD-tree each iteration, causing the loop to run $O(K)$ times and producing a total time complexity of $O(K^2\log K)$. 
+
+
+\subsection{Clustering Comparisons}
+
+Clustering results were frequently tested and compared between the framework implementation and the project's triangular clustering with different merging strategies. 
+
+A visualisation of each clustering mechanism is given on the (6.6.6) color code of distance 5 at trap capacities 5 and 10, grouping clusters by colour alongside their centroids indicated in the plot by $\times$.
+
+\subsubsection{Trap capacity 5:} 
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/halving_clusters_tc=5_d=5.png}
+     \caption{Framework clustering mechanism}
+     \label{fig:plot1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/tri_dist_bounded_nn_clusters_tc=5_d=5.png}
+     \caption{Bounded nearest-neighbour clustering, $thresh = 2.5$}
+     \label{fig:plot2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/tri_knn_clusters_tc=5_d=5.png}
+     \caption{$k$-nearest-neighbour clustering, $k=3$}
+     \label{fig:plot3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/tri_unbounded_nn_clusters_tc=5_d=5.png}
+     \caption{Unbounded nearest-neighbour clustering}
+     \label{fig:plot4}
+\end{figure}
+
+\subsubsection{Trap capacity 10:}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/halving_clusters_tc=10_d=5.png}
+     \caption{Framework clustering mechanism}
+     \label{fig:framework10}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/tri_dist_bounded_nn_clusters_tc=10_d=5.png}
+     \caption{Bounded nearest-neighbour clustering, $thresh = 2.5$}
+     \label{fig:plot2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/tri_knn_clusters_tc=10_d=5.png}
+     \caption{$k$-nearest-neighbour clustering, $k=3$}
+     \label{fig:plot3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \includegraphics[width=\textwidth]{assets/clusters/tri_unbounded_nn_clusters_tc=10_d=5.png}
+     \caption{Unbounded nearest-neighbour clustering}
+     \label{fig:plot4}
+\end{figure}
+
+An interesting artifact of the framework clustering in Fig. \ref{fig:framework10} is observed in cluster 2, composed of three ions in the top left corner alongside a separated, singular ion towards the top middle. In comparison, the triangular clustering mechanisms preserve and form tighter clusters for the same top left corner. 
+
+From these results, the bounded nearest-neighbour clustering demonstrates the tendency to form a larger number of clusters relative to the other methods due to its tighter constraint on the search space in the merging stage. A potential experiment for later stages could be the effect of increasing the boundary threshold value on compilation metrics such as logical error rate and syndromic extraction time.
 
 \section{Framework Changes}
 
+
 \newpage
-\section{Ion Routing Algorithm}
+\section{Extension: Research Based Experiments}
+
 
 
 

@@ -1,12 +1,12 @@
 \chapter{Evaluation}
 \label{chapter:eval}
-In this chapter, I firstly review and evaluate the individual components developed in this project, then moving onto the evaluation of the core project as a whole.
+In this chapter, the individual components of the project are firstly reviewed and evaluated, following the evaluation of the core project as a whole.
 More specifically, the main evaluation objectives include:
 
 \begin{itemize}
     \item \textit{Validation of the color code class and comparisons against literature}
     \item \textit{Evaluation and comparison of the qubit mapping approach}
-    \item \textit{Evaluation and correctness of the alternative ion routing approach}
+    \item \textit{Analysis and evaluation of research based extensions}
     \item \textit{Benchmarking against other color code compilers}
     
 \end{itemize}
@@ -74,35 +74,50 @@ Ours  & 0.655(6) & 0.6962(7) & 0.00382(1) & 0.00308(4) \\
 \caption{Comparison of fitting parameters for the logical $Z$-error rates of the single-ancilla color code. Values in parentheses denote the standard statistical uncertainty in the final digit.}
 \end{table}
 
-\begin{figure}[b]
+The data used to fit Eqs. \ref{scalethresheq} and \ref{crossthresheq} was collected using stim, with 50 million repeated experiments per distance per physical error rate with maximum errors set to 5000.
+
+\begin{figure}[p] 
     \centering
-    \includegraphics[width=0.75\linewidth]{assets/ImplCCThresholdPlot.png}
-    \caption{Logical vs physical error scaling for this project's single-ancilla (6.6.6) color code circuit implementation}
-    \label{fig:placeholder}
+
+    \begin{subfigure}{\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{assets/paper666ColorCode.png}
+        \caption{(6.6.6) color code threshold plot from \cite{flaggedweightcolorcode}, with dotted lines indicating the results for the single-ancilla circuits}
+    \end{subfigure}
+
+    \vspace{1em}
+
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=1.2\linewidth]{assets/ImplCCThresholdPlot_Final_XL.png}
+        \caption{Threshold plot for the (6.6.6) color code logical X error rates}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=1.2\linewidth]{assets/ImplCCThresholdPlot_Final_ZL.png}
+        \caption{Threshold plot for the (6.6.6) color code logical Z error rates}
+    \end{subfigure}
+
+    \vspace{1em}
+
+    % --- Second row of two images ---
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=1.2\linewidth]{assets/ImplCCThresholdPlot_Final_XL_Zoomed.png}
+        \caption{Scaling and cross threshold lines on (b)}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=1.2\linewidth]{assets/ImplCCThresholdPlot_Final_ZL_Zoomed.png}
+        \caption{Scaling and cross threshold lines on (c)}
+    \end{subfigure}
+
+    \caption{Comparison of threshold plots from the .}
+    \label{fig:all_plots}
 \end{figure}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=0.9\linewidth]{assets/paper666ColorCode.png}
-    \caption{(6.6.6) color code threshold plot from \cite{flaggedweightcolorcode}, with dotted lines indicating the results for the single-ancilla circuits}
-    \label{fig:placeholder}
-\end{figure}
-
-\begin{figure}[!h]
-
-        \begin{subfigure}{0.7\textwidth}
-        \includegraphics[width=1\linewidth, height=5cm]{assets/ImplCCThresholdPlot_Final_XL.png} 
-        \caption{Run 1}
-        \label{fig:subim1}
-        \end{subfigure}
-        \begin{subfigure}{0.7\textwidth}
-        \includegraphics[width=1\linewidth, height=5cm]{assets/ImplCCThresholdPlot_Final_ZL.png}
-        \caption{Run 2}
-        \label{fig:subim2}
-        \end{subfigure}
-        \label{fig:image2}
-    \end{figure}
-    
 \section{Qubit Mapping}
 
 
