@@ -7,7 +7,7 @@ First, we begin with a background on quantum computing, quantum error correction
 
 
 
-Classical hardware encodes information with bits, taking on binary values of either a 0 or 1. In the case of quantum computers, information can be stored using ``qubits'', allowing a qubit to be in a state of $\ket{0}$, $\ket{1}$ or in some linear combination (a superposition) $\alpha\ket{0} + \beta\ket{1}$ by leveraging quantum superposition. The values $\alpha$ and $\beta$ are complex numbers referred to as probability amplitudes, where $\lvert\alpha\rvert^2$ and $\lvert\beta\rvert^2$ give the probability of finding the qubit in the $\ket{0}$ and $\ket{1}$ states respectively, additionally satisfying the normalisation condition of $\lvert\alpha\rvert^2 + \lvert\beta\rvert^2 = 1$.
+Classical hardware encodes information with bits, taking on binary values of either a 0 or 1. In the case of quantum computers, information can be stored using quantum bits, ``qubits'', allowing a qubit to be in a state of $\ket{0}$, $\ket{1}$ or in some linear combination (a superposition) $\alpha\ket{0} + \beta\ket{1}$ by leveraging quantum superposition. The values $\alpha$ and $\beta$ are complex numbers referred to as probability amplitudes, where $\lvert\alpha\rvert^2$ and $\lvert\beta\rvert^2$ give the probability of finding the qubit in the $\ket{0}$ and $\ket{1}$ states respectively, additionally satisfying the normalisation condition of $\lvert\alpha\rvert^2 + \lvert\beta\rvert^2 = 1$.
 
 
 The following key concepts govern the state and evolution of the states in a quantum computer.
@@ -18,10 +18,11 @@ The following key concepts govern the state and evolution of the states in a qua
     \item Measurement collapses a quantum state into the observed state
 \end{enumerate}
 
+
 The state space of a qubit can then be represented as a a unit vector. 
 The second postulate ensures that the state of a qubit always satisfies the normalisation condition, and allow us to evolve the state of a qubit using unitary quantum gates. The Pauli matrices are such examples:
-\[
-X = \begin{pmatrix}
+\begin{equation}
+    X = \begin{pmatrix}
     0 & 1\\ 1 & 0
 \end{pmatrix}
 \;
@@ -33,19 +34,34 @@ Y = \begin{pmatrix}
 Z = \begin{pmatrix}
     1 & 0\\ 0 & -1
 \end{pmatrix}
-\]
+\end{equation}
+
 
 The X gate acts as a NOT operation, Y having the effect of $Y\ket{0} = i\ket{1}, Y\ket{1} = -i\ket{0}$ and Z reversing the parity (positive/negative) for $\ket{1}$ states. In addition to this, the Hadamard gate is frequently  used to produce a superposition state:
-\[
-H =\frac{1}{\sqrt{2}}\begin{pmatrix}
+\begin{equation}
+    H =\frac{1}{\sqrt{2}}\begin{pmatrix}
     0 & 1\\ 1 & 0
 \end{pmatrix}
 ,\;\;
 H\ket{0} = \ket{+} = \frac{1}{\sqrt{2}}(\ket{0} + \ket{1})
 ,\;\;
 H\ket{0} = \ket{-} = \frac{1}{\sqrt{2}}(\ket{0} - \ket{1})
-\]
+\end{equation}
 
+We define the universal gate set, a set of unitary gates that can be used to approximate any other unitary transformation to an arbitrary precision. A possible set includes the Hadamard gate $H$, the $CNOT$ (controlled-NOT) gate and the $T$ gate.
+
+\begin{equation}
+    CNOT = \begin{pmatrix}
+        1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 \\
+        0 & 0 & 0 & 1 \\
+        0 & 0 & 1 & 0
+    \end{pmatrix}
+    \;\;\;\;
+    T = \begin{pmatrix}
+        1 & 0 \\ 0 & e^{i\pi/4}
+    \end{pmatrix}
+\end{equation}
 % TO Add:
 % Section about modelling quantum errors?
 % Section about 
@@ -82,9 +98,11 @@ For the 3-qubit repetition code, two ancillas are used, with the first measuring
 %%%% This part feels a bit disjoint, end it better
 % --------------------------------------------------------------$
 
-In addition to bit flips, Quantum Error Correction Codes (QECC) must also be able to protect against phase-flip errors. Ancilla qubits can be exploited in a similar way to detect phase flips \cite{IBMQuantumLearning}. 
+In addition to bit flips, quantum error correction (QEC) codes must also be able to protect against phase-flip errors. Ancilla qubits can be exploited in a similar way to detect phase flips \cite{IBMQuantumLearning}. 
 
 In this way, QEC circuits can be scaled using these concepts in order to correct larger numbers of errors by building increasingly complex and sophisticated error detection and correction methods. 
+
+In the evaluation of a QEC code, one possible performance metric is the fault-tolerant threshold. The threshold represents a critical point at which the code's scaling behaviour relative to the physical error rate changes. At physical error rates below this threshold, increasing the size or ``distance'' of a code will exponentially suppress the logical error rate, whereas if hardware noise exceeds it, the logical error rate will worsen as the size scales. Therefore, a higher threshold is more desirable in a QEC code.
 
 \subsection{Stabilizer Codes}
 
@@ -92,18 +110,37 @@ Stabilizer codes are a class of quantum codes used for error correction, defined
 
 A stabilizer generator is defined to be an $n$-qubit Pauli operator $P \in \Pi^n$ such that all valid states/codes $\ket{\psi}$ in the codespace have a +1 eigenvalue: $P\ket{\psi} = \ket{\psi}$. Stabilizer codes can be realised into quantum circuits by measuring the corresponding Pauli operators, often with the use of an ancilla qubit to hold the resulting eigenvalue or ``error syndrome'' \cite{stabilizersexplain}.
 
+
 % might help to tie in 3qubit rep code as a stab code?
+\subsection{Surface Codes}
+
+The surface code represents a class of topological CSS stabilizer codes. For 2D surface codes, a logical qubit is encoded across a two-dimensional planar lattice of physical data qubits. Error detection is performed through a chequerboard pattern of alternating $X$-type and $Z$-type stabilizers, with each stabilizer measuring the parity of adjacent data qubits. 
+
+While traditionally defined on a standard orthogonal grid, modern literature predominantly utilises the rotated surface code. This variant, defined on a grid rotated by $45^\circ$, significantly reduces the physical qubit overhead required to achieve a target logical error rate, making it the highly favoured baseline for hardware implementations \cite{rotatedvsunrotatedsurfacecode}.
+
+\begin{figure}[!h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{assets/surfacecode.png}
+  \caption{2D rotated surface codes at distances 3 and 5. Data qubits (white) are defined on the vertices of each surface, with ancilla qubits (grey) in the centres. The surfaces are shaded yellow or blue to differentiate the $X$ and $Z$ stabilizers respectively.}
+  \label{surfacecodes}
+\end{figure}
+
+Surface codes currently dominate QEC research, attributed to their simple topology and high thresholds of around 0.5-1.1\% \cite{surfacecodethreshold1, surfacecodethreshold2}. However, to realise large-scale fault-tolerant quantum computing (FTQC), the universal gate set must be implemented in a fault-tolerant way, with which the surface code currently struggles, requiring additional techniques that add implementation overhead \cite{surfacecodelatticsurgery}.
 
 \subsection{Color Codes}
 
 Color codes constitute a class of 2D topological stabilizer codes defined on a three-colorable, three-valent, uniformly tiled lattice. Each face $f$ in the lattice defines two stabilizer generators in terms of Pauli operators acting on the vertices of that face:
-\begin{equation} \label{ccstabilizers}
+
+\begin{equation} 
+\label{ccstabilizers}
     S^f_X = \bigotimes_{v \in f} X_v, \;\; S^f_Z = \bigotimes_{v \in f} Z_v
 \end{equation}
 
-The code distance, $d$, is defined by the number of physical qubits along the shortest boundary of the lattice. This distance determines the code's error-correcting capability, as a higher distance allows for the suppression of more complex error patterns.
+The color code preserves the state of the logical qubit by repeated stabilizer measurements, with the outcomes (syndromes) compared between rounds, such that a change in parity indicates an error.
 
-This project specifically examines the compilation of triangular color codes \cite{tricolcodebombin} (examples shown in Fig. \ref{colorcodes}), which encode a single logical qubit. The spatial locality of the quantum operations (as seen in Eq. \ref{ccstabilizers}) where interactions are restricted to neighboring qubits, suggests that these codes can benefit from a topology-aware mapping scheme, similarly to past work with surface codes \cite{scottPaper}.
+The code distance, $d$, is defined by the number of physical qubits along the shortest boundary of the lattice. This distance determines the code's error-correcting capability, as a higher distance allows for the suppression of more complex error patterns. 
+
+This project specifically examines the compilation of triangular color codes \cite{tricolcodebombin} (examples shown in Fig. \ref{colorcodes}), which encode a single logical qubit. The spatial locality of the quantum operations (as seen in Eq. \ref{ccstabilizers}) where interactions are restricted to neighbouring qubits, suggests that these codes can benefit from a topology-aware mapping scheme, similarly to past work with surface codes \cite{scottPaper}.
 
 
 \begin{figure}[!h]
@@ -112,24 +149,28 @@ This project specifically examines the compilation of triangular color codes \ci
   \hfill
   \subfloat[Distance 7 4.8.8 color code]{\includegraphics[width=0.45\textwidth]{488.png}\label{fig:f1}}
   \hfill
-  \caption{Two different color code tesselations of distance 7, depicting both data qubits (black) and ancilla qubits (grey)}
+  \caption{Two different color code tesselations of distance 7, depicting both data qubits (black) and ancilla qubits (grey).}
   \label{colorcodes}
 \end{figure}
 
-The color code attempts to preserve the state of the logical qubit by repeated stabilizer measurements, with the outcomes (syndromes) compared between rounds, such that a change in parity indicates an error.
+
+
+Compared to surface codes, color codes often have higher weight stabilizers, as each ancilla qubit interacts with a larger number of data qubits during measurement. As a result, circuit depth (sequential time steps to perform circuit operations) increases, introducing more errors and results in lower thresholds. Consequently, optimisations in the implementations and/or decoders of color codes are required to counter this to achieve better thresholds \cite{flaggedweightcolorcode, ftqccolorcode0.47}.
+
+However, a key advantage of color codes over suface codes is their ability to implement all logical Clifford gates transversally \cite{transversalcolorcode}. This property has led color codes to be considered as promising candidates for FTQC with low implementation overheads.
 %- can implement clifford gates transversally 
 %- compare to surface codes
 
+
 \subsection{Decoding}
 
-In order to protect logical information, a QEC code must repeatedly measure syndrome information, using a decoder that takes in the syndrome information, inferring the most likely physical errors that occurred during computation and providing a correction. 
+To protect the information of a logical qubit using a QEC code, a decoder is used to take the syndrome/parity measurement information as input, inferring the most likely physical errors that occurred during computation to provide a correction.
 
-QEC codes such as surface codes will often make use of decoders such as pymatching, which simplifies decoding to a minimum perfect weight matching problem on a matching graph. This graph is constructed with detectors as nodes and the edges between nodes representing potential errors flipping those detectors, weighted with the logarithm of the probability of the error \cite{pymatching}.
+QEC code implementations in stim, such as surface codes, will often make use of decoders such as pymatching, which simplifies decoding to a minimum perfect weight matching problem on a matching graph. This graph is constructed with detectors as nodes and the edges between nodes representing potential errors that flip those detectors, weighted with the logarithm of the probability of the error \cite{pymatching}.
 
-Color codes cannot be directly decoded with such decoders, as one error often sets off three or more detection events rather than two which do not map directly into a matching graph with pymatching. Instead, this project will make use of chromobius, an open-source decoder based on a möbius decoder \cite{mobiusdecoder}. Chromobius takes in additional information about the color code circuit given through detector annotations, and maps errors into möbius errors and translating the problem into a möbius matching graph \cite{chromobius}.
+Color codes cannot be directly decoded with pymatching, as one error often sets off three or more detection events rather than two which prevents these ``hyper-edge'' errors from being mapped directly into the matching graph. Instead, this project will make use of chromobius, an open-source decoder based on a Möbius decoder \cite{mobiusdecoder}. Chromobius takes in additional information on the color code circuit, provided through detector annotations. Errors are then mapped into Möbius errors , translating the problem into a Möbius matching graph \cite{chromobius}.
 
-An key part of this project relies on integrating support for chromobius into the QCCD architecture simulation, allowing QCCD-compiled color code circuits to be decoded. 
-
+An key part of this project relies on integrating support for chromobius into the QCCD architecture simulation, allowing QCCD-compiled color code circuits to be decoded.  Without this critical step, experimentation and evaluation of the color code on hardware using the framework is infeasible.
 
 
 \section{Trapped Ion Quantum Charge-Coupled Devices}
@@ -144,16 +185,15 @@ Trapped Ion (TI) quantum computers make use of charged atomic particles (ions) a
 
 QCCD (Quantum Charge-Coupled Device) architecture was first proposed in 2002 \cite{qccd2002} in response to the practical challenges of manipulating large numbers of ions within a single trap, which limited scalability \cite{wineland1998experimental, hughes1996decoherence}. Rather than confining all ions into one trapping region, QCCD adopts a modular design in which ions are distributed across multiple interconnected traps. Computation is done through ion transport, where ions are ``shuttled'' between trapping zones to enable quantum gate operations and entanglement. While the original proposal suggests an explicit separation between memory and interaction regions in the architecture, more recent experimental implementations and compiler frameworks have relaxed these strict zone assumptions \cite{muzzletheshuttle}. 
 
-An example QCCD architecture is shown in Fig.\ref{fig:qccdarch}, illustrating the different components that make up the architectural topology. This project will make use of this abstraction as the basis for implementing QCCD related components in the compiler pass.
+An example QCCD architecture is depicted in Fig. \ref{fig:qccdarch}, illustrating the components that form the architectural topology. This project will make use of this abstraction as the basis for implementing QCCD related components in the compiler pass.
 
 QCCD architectures have since been realised by several groups, including Honeywell \cite{honeywellqccd} and Quantinuum with its H2 processor \cite{quantinuumH2}.
 
 
-
-\begin{figure}
+\begin{figure}[!h]
     \centering
     \includegraphics[width=0.75\linewidth]{assets/qccdarch.png}
-    \caption{QCCD architecture showing 4 ions (white) in each trap (blue). The traps are connected via transport segments (black) and junctions (orange), where ions can transported through for inter-trap movement.}
+    \caption{QCCD architecture showing 4 ions (white) in each trap (blue). The traps are connected via transport segments (black) and junctions (orange), where ions can be transported through for inter-trap movement.}
     \label{fig:qccdarch}
 \end{figure}
 
@@ -309,7 +349,7 @@ Project development was done inside a virtual environment (using python's \minti
 
 Development was done using VSCode IDE on my personal laptop (ThinkPad T430, 2-core CPU, 8GB RAM, Windows 10 and Linux) and my custom PC (6-core AMD Ryzen 5 7600X, 32GB RAM, Windows 11) for more intensive tasks. 
 
-GitHub and git was used for version control and to make regular backups of local progress to an online repository. 
+GitHub and git were used for version control and to make regular backups of local progress to an online repository. 
 Documents and notes relating to the project were written and organised using Notion. Overleaf was used to write this dissertation and keep a backup copy of the dissertation online.
 
 

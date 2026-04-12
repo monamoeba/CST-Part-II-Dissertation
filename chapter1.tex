@@ -1,55 +1,23 @@
 \chapter{Introduction}
 
-This is an example using the \LaTeX{} template for UCI theses and
-dissertation documents \cite{uci-thesis-latex}. Figure
-\ref{fig:sourcecode} is just for illustration purposes, as is Table
-\ref{tab:coordinates}.
 
-\begin{figure}
-\begin{verbatim}
-#include <iostream>
-int main(int argc, char** argv) {
-  std::cout << "Hello World." << std::endl;
-  return 0;
-}
-\end{verbatim}
-  \caption{Example source code.}
-  \label{fig:sourcecode}
-\end{figure}
 
-\section{Background}
+\section{Context and Motivation}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Trapped ion (TI) qubits currently represent one of the leading physical platforms for quantum computing. Whilst current TI systems are restricted to a modest number of qubits and physical error rates ($10^{-3}$ to $10^{-4}$)\cite{quantinuum_performance_validation, quantinuumH2fidelity}, the Quantum Charge-Coupled Device (QCCD) presents a highly promising modular architectural path towards scalability of these systems. 
+In addition to this, error rates of practical quantum applications are below $10^{-10}$ \cite{google2024}, requiring the use of robust Quantum Error Correction (QEC) schemes to bridge the gap between these rates. 
 
-\begin{table}
-  \centering
-  \begin{tabular}{|rr|r|}
-    \hline
-    $x$ & $y$ & $z$ \\
-    \hline
-    14 & 12 & -2 \\
-    0 & 33 & -25 \\
-    -3 & 11 & 22 \\
-    4 & 4 & 6 \\
-    \hline
-  \end{tabular}
-  \caption{Example coordinates.}
-  \label{tab:coordinates}
-\end{table}
+Experimentation is required to consider the design choices and architectural adaptations required to implement practical scale QEC on QCCD systems. Alongside this, researchers must be able to simulate and benchmark the the viability of different QEC schemes on these systems. Recently, a specialized compilation toolflow was proposed to address this architectural evaluation challenge \cite{scottPaper}. This framework provides an essential baseline by compiling standard surface codes onto QCCD architecture. 
+Consequently, the current toolflow is highly specialised and restrictive in the exploration of other QEC codes, making strong assumptions based on the uniform, weight-four stabilizer structure of surface codes.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Color codes are a highly promising class of QEC codes, with certain implementations reaching the performance levels of surface codes \cite{vibedecoder}. In literature, the physical compilation of color codes remains a niche and under-researched domain. 
+
+This project directly addresses the critical gap in the framework, with the primary objective being to extend the baseline toolflow from a specialized surface code compiler into a generalised framework capable of evaluating color codes, reconfiguring the entire compilation pipeline to allow for simulation of structurally diverse QEC codes.
+
+\section{Project Structure}
+
+
+\section{Related Works}
 
 
 %%% Local Variables: ***

@@ -34,18 +34,19 @@
 Give the clearest respository overview the world has ever seen, including a clear diagram and indication of where the relevant implementation sections are and why.
 
 \section{Implementing Color Code Circuits}
+\label{sec:impl_color_code}
 
 The first milestone of this project was to produce a set of color code circuits that could be used to compile onto QCCD architecture. This was motivated by the lack of native color code circuit support in stim, meaning the project required developing alternative, new chromobius compatible color code circuits in stim for the compilation pipeline.
 
 \subsection{(6.6.6) Color Code Topology}
 
-As mentioned in the preparation chapter, color codes require a three-colourable tiling that can manifest as 3 possible tesselations. The (4.8.8), the (6.6.6) and the (4.6.12), each defining a distinct triangular color code topology \cite{landahl2011faulttolerantquantumcomputingcolor}. 
+As mentioned in the preparation chapter, color codes require a three-colourable tiling that can manifest as 3 possible tessellations. The (4.8.8), the (6.6.6) and the (4.6.12), each defining a distinct triangular color code topology \cite{landahl2011faulttolerantquantumcomputingcolor}. 
 
 \begin{figure}[!h]
     \centering
-    \includegraphics[width=0.75\linewidth]{assets/colorcodetesselations.png}
+    \includegraphics[width=0.75\linewidth]{assets/colorcodetessellations.png}
     \caption{The three possible tilings of a triangular color code, each of distance 11 from \cite{landahl2011faulttolerantquantumcomputingcolor}}
-    \label{fig:colorcodetesselations}
+    \label{fig:colorcodetessellations}
 \end{figure}
 Of these, the (6.6.6) was an ideal candidate for implementation due to its relatively simpler topology and richer source of documentation and literature, enabling faster development towards a working prototype. 
 
@@ -94,7 +95,7 @@ Typically, a stabilizer code circuit involves iterations of stabilizer measureme
     \label{fig:stabilizerscircuit}
 \end{figure}
 
-Taking the tiles generated from the \mintinline{python}{_generate_layout()}, I wrote \mintinline{python}{_build_circuit()} to construct the stim circuit, using helper functions \mintinline{python}{_measure_rounds()} and \mintinline{python}{_measure_stabilizers()} to model the qubit-level operations per stabilizer measurement and include the detector annotations required by chromobius into the stim circuit. To guide my construction process, I looked at a few single-qubit syndrome extraction models that detailed operation schedules for a single ancilla color code \cite{flaggedweightcolorcode, landahl2011faulttolerantquantumcomputingcolor}.
+Taking the tiles generated from the \mintinline{python}{_generate_layout()}, \mintinline{python}{_build_circuit()} was written to construct the stim circuit, using helper functions \mintinline{python}{_measure_rounds()} and \mintinline{python}{_measure_stabilizers()} to model the qubit-level operations per stabilizer measurement and include the detector annotations required by chromobius into the stim circuit. To guide my construction process, Refs. \cite{flaggedweightcolorcode, landahl2011faulttolerantquantumcomputingcolor} were examined for the default single-qubit syndrome extraction models that detailed operation schedules for a single ancilla color code.
 
 \subsection{Noise Model}
 
@@ -102,7 +103,7 @@ The noise model for a quantum circuit is used to characterise the types and dist
 
 Several noise models exist in literature which vary in levels of abstraction, starting with the code-capacity noise model assuming independent errors on only data qubits between perfect syndrome measurements. The phenomenological noise model introduces additional complexity of faulty syndrome extraction where measurement outcomes are also subject to error. Finally, the circuit-level noise model assigns individual error probabilities to each physical operation.
 
-With a focus on realistic modelling and compilation of color codes onto QCCD architecture, the noise model chosen for this implementation was the circuit-level noise model to capture the detailed error mechanisms that may occur during the execution of a circuit.
+With a focus on realistic modelling and compilation of color codes onto QCCD architecture, the noise model chosen for this implementation was the circuit-level noise model, selected to capture the detailed error mechanisms that may occur during the execution of a circuit.
 
 The circuit-level noise model of strength $p$ involve the following operations, alongside their respective stim interfaces that are used to model them:
 \begin{itemize}
@@ -127,6 +128,7 @@ The two-qubit depolarizing channel is defined as:
 \end{align}
 
 \section{Qubit Mapping}
+\label{sec:impl_qubit_mapping}
 
 Once the color code circuit is generated, the compiler must map the qubits to physical ions within traps in the QCCD architecture. This process makes use of a two-step pipeline: qubit clustering followed by cluster to trap mapping. 
 The primary architectural challenge of compiling color codes lies in their high weight stabilizer generators and triangular lattice that differs from surface codes. Therefore, this project will focus exclusively on developing and evaluating novel clustering methodologies for color codes. The subsequent mapping of these clusters to physical traps is handled by the base framework \cite{scottPaper}, a deliberate choice to isolate the topology-aware mapping challenge from the hardware-specific trap assignment.
@@ -227,7 +229,7 @@ For bounded distance merging, experimental thresholds around the maximum distanc
 \begin{equation}
     \text{thresh} = \max_{i,j}\; \text{distance}(a_i, a_j),  
 \end{equation}
-were chosen to preserve high locality in the clustering. As $\text{thresh} \rightarrow \infty$, this method degrades to an unbounded distance search strategy. 
+were explored to preserve high locality in the clustering. As $\text{thresh} \rightarrow \infty$, this method degrades to an unbounded distance search strategy. 
 
 The generalized logic for this bottom-up approach is outlined in Alg. \ref{alg:merge_clusters}. The procedure iteratively searches for the closest valid partner for the smallest active clusters. Once a successful merge occurs, the cluster lists are updated, and the process repeats until no further merges can be made.
  
@@ -273,12 +275,12 @@ The generalized logic for this bottom-up approach is outlined in Alg. \ref{alg:m
 \end{algorithmic}
 \end{algorithm}
 
-The algorithm was modified to implement the different merging strategies mentioned above, yielding different final clusters and overall compilation results (discussed in Chapter \ref{chapter:eval}).
+The algorithm was modified to implement the different merging strategies mentioned above, yielding different final clusters and overall compilation results (discussed in Section \ref{sec:qubit_mapping_eval}).
 
 A particularly useful data structure in this implementation was the use of a KD-tree, a binary search tree in $k$-dimensional space with $N$ items, enabling fast $O(\log N)$ lookups of cluster centers for operations relating to line 6 in Alg. \ref{alg:merge_clusters}. 
 
-Suppose the input to the merging algorithm is $K$ clusters. Analysing a single iteration of the while loop, initialisation of a KD-tree takes $O(K \log K)$. The sorting of the active clusters by size also takes $O(K \log K)$. The KD-tree is then queried for the nearest neighbour(s) (depending on the strategy), resulting in a query time of at most $O(K \log K)$.
-In the worst case scenario, the algorithm finds one valid merge per while-loop iteration requiring a rebuild of the KD-tree each iteration, causing the loop to run $O(K)$ times and producing a total time complexity of $O(K^2\log K)$. 
+Suppose the input to the merging algorithm are $K$ clusters. Analysing a single iteration of the while loop, initialisation of a KD-tree takes $O(K \log K)$. The sorting of the active clusters by size also takes $O(K \log K)$. The KD-tree is then queried for the nearest neighbour(s) (depending on the strategy), resulting in a query time of at most $O(K \log K)$.
+In the worst case scenario, the algorithm finds one valid merge per while-loop iteration requiring a rebuild of the KD-tree each iteration, causing the loop to run $O(K)$ times and producing a total time complexity of $O(K^2\log K)$. Considering that $K$ is often significantly smaller than $N$, where $N$ is the number of qubits, the effect of the merging process on the execution time of the overall clustering mechanism is almost negligible.
 
 
 \subsection{Clustering Comparisons}
@@ -299,7 +301,7 @@ A visualisation of each clustering mechanism is given on the (6.6.6) color code 
 \begin{figure}[H]
     \centering
      \includegraphics[width=\textwidth]{assets/clusters/tri_dist_bounded_nn_clusters_tc=5_d=5.png}
-     \caption{Bounded nearest-neighbour clustering, $thresh = 2.5$}
+     \caption{Bounded nearest-neighbour clustering, $\text{thresh} = 2.5$}
      \label{fig:plot2}
 \end{figure}
 
@@ -329,7 +331,7 @@ A visualisation of each clustering mechanism is given on the (6.6.6) color code 
 \begin{figure}[H]
     \centering
      \includegraphics[width=\textwidth]{assets/clusters/tri_dist_bounded_nn_clusters_tc=10_d=5.png}
-     \caption{Bounded nearest-neighbour clustering, $thresh = 2.5$}
+     \caption{Bounded nearest-neighbour clustering, $\text{thresh} = 2.5$}
      \label{fig:plot2}
 \end{figure}
 
@@ -349,13 +351,53 @@ A visualisation of each clustering mechanism is given on the (6.6.6) color code 
 
 An interesting artifact of the framework clustering in Fig. \ref{fig:framework10} is observed in cluster 2, composed of three ions in the top left corner alongside a separated, singular ion towards the top middle. In comparison, the triangular clustering mechanisms preserve and form tighter clusters for the same top left corner. 
 
-From these results, the bounded nearest-neighbour clustering demonstrates the tendency to form a larger number of clusters relative to the other methods due to its tighter constraint on the search space in the merging stage. A potential experiment for later stages could be the effect of increasing the boundary threshold value on compilation metrics such as logical error rate and syndromic extraction time.
+From these results, the bounded nearest-neighbour clustering demonstrates the tendency to form a larger number of clusters relative to other methods due to its tighter constraint on the search space in the merging stage. A potential experiment for later stages could be the effect of increasing the boundary threshold value on compilation metrics such as logical error rate and syndromic extraction time.
 
 \section{Framework Changes}
+
+In order to provide the functionality for compiling color codes, the entire pipeline required additional features and restructuring.
+
+Changes were made to the pipeline incrementally as the project progressed through the stages.
+
+
+\begin{itemize}
+    \item Adapting simulator QCCD.circuit class to enable generation of available color code classes 
+    \item Adapting simulator to differentiate between code types, utilising chromobius when a color code was used
+    \item Adding methods that enabled processing of color code circuits, including setting up the required hardware from input hardware parameters.
+    \item Providing flexibility in pipeline to choose the mapping methodology, used to compare effect of mapping strategies in the eval section 
+    \item Test suite for integration and functional testing of color code generation and mapping strategies 
+    
+\end{itemize}
+\section{Extension: The (4.8.8) Color Code}
+
+Alongside the (6.6.6) color code, a stretch goal included the implementation of an alternative color code tessellation to provide a richer source of testing material to further validate the compiler and mapping methodologies. 
+
+The primary challenge in implementing this color code was its complex geometry, greatly diverging from the uniformly tiled hexagons of the (6.6.6) color code. In addition to the difficulty of generating a single tiling, it was also necessary for the tiling mechanism to generalise to all possible input distances.
+The (4.8.8) tile generation procedure was developed over several days of trial and error, by identifying underlying structural patterns, then identifying the base qubits and their respective face shapes to construct the topology relative to the base.  
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\linewidth]{assets/488colorcodes.png}
+    \caption{Generated topology of the (4.8.8) color code}
+    \label{fig:488colorcodes}
+\end{figure}
+
+The second challenge lay in the generation of the quantum circuit, where the syndrome extraction required finer detail, due to differing weight stabilizers that occurred in the code. 
 
 
 \newpage
 \section{Extension: Research Based Experiments}
+
+On completion of the compilation pipeline for the color code, the framework is now able to process and evaluate the suitability of the code on various architectural QCCD designs. Naturally, this opens up the project towards researching some key questions.
+
+\begin{itemize}
+    \item \textit{What are the effects and suitability of different QCCD hardware topologies on color codes?}
+    \item \textit{How does the choice of trap capacity influence logical error rates?} 
+    \item \textit{What parameters or properties are the compilation time bottlenecks for color codes?}
+    \item \textit{What specific architectural parameters provide the most promising path towards FTQC with color codes?}
+\end{itemize}
+
+For this section, the majority of the work was done in \mintinline{python}{JupyterNotebook}, using its interactive features to vary parameters by hand and run compilation experiments, alongside the generation of plots.
 
 
 
